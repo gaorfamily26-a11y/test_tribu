@@ -1,12 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createClient } from '@supabase/supabase-js';
+import { GoogleGenAI } from "@google/genai";
 
 // --- SUPABASE CONFIGURATION ---
 const SUPABASE_URL = 'https://epyqaqxlgqcxbenaydct.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVweXFhcXhsZ3FjeGJlbmF5ZGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3NzAyOTIsImV4cCI6MjA4MDM0NjI5Mn0.4FKPSM-UfQlfrKQoXRnBps9RLCX2MT8HkqcQlEHgc5Q';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// --- GEMINI AI CONFIGURATION ---
+// Note: API Key comes from process.env.API_KEY automatically in this environment
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // Icons
 const GiftIcon = () => (
@@ -141,6 +146,18 @@ const ArrowRightIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
 );
 
+const SparkleIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /></svg>
+);
+
+const BriefcaseIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+);
+
+const RocketIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"></path><path d="M9 22h6"></path><path d="M12 2v8"></path><path d="M12 10a5 5 0 0 0-5 5v3a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-3a5 5 0 0 0-5-5z"></path></svg>
+);
+
 // --- INTERACTIVE CONFETTI COMPONENT ---
 const ConfettiBackground = () => {
     return (
@@ -195,7 +212,6 @@ const PREDEFINED_CATEGORIES = [
   "Otro"
 ];
 
-const SECRET_ACCESS_CODE = "TRIBU2024";
 const ADMIN_PASSWORD = "ADMIN123";
 
 // Helper for uploading
@@ -627,10 +643,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     );
 }
 
-// ... [PreRegisterForm kept same]
+// ... [PreRegisterForm]
 function PreRegisterForm({ onBack }: { onBack: () => void }) {
-    const [wizardStep, setWizardStep] = useState<'lock' | 'member' | 'business' | 'success'>('lock');
-    const [accessCode, setAccessCode] = useState('');
+    // Removed 'lock' step - Entry is now public "portal style"
+    const [wizardStep, setWizardStep] = useState<'member' | 'business' | 'success'>('member');
     
     // Member Data (Step 1)
     const [memberName, setMemberName] = useState('');
@@ -647,6 +663,7 @@ function PreRegisterForm({ onBack }: { onBack: () => void }) {
     const [tiktok, setTiktok] = useState('');
     const [website, setWebsite] = useState('');
     const [description, setDescription] = useState('');
+    const [isAiLoading, setIsAiLoading] = useState(false);
 
     // Prize Data (Step 2)
     const [prize, setPrize] = useState('');
@@ -659,15 +676,6 @@ function PreRegisterForm({ onBack }: { onBack: () => void }) {
     const [errorMsg, setErrorMsg] = useState('');
     const logoInputRef = useRef<HTMLInputElement>(null);
     const prizeInputRef = useRef<HTMLInputElement>(null);
-
-    const handleUnlock = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (accessCode.trim().toUpperCase() === SECRET_ACCESS_CODE) {
-            setWizardStep('member');
-        } else {
-            alert('Código incorrecto.');
-        }
-    };
 
     const handleMemberSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -701,6 +709,31 @@ function PreRegisterForm({ onBack }: { onBack: () => void }) {
             const url = URL.createObjectURL(file);
             if (type === 'logo') { setLogoFile(file); setLogoPreview(url); }
             else { setPrizeFile(file); setPrizePreview(url); }
+        }
+    };
+
+    const improveDescriptionWithAI = async () => {
+        if (!description || description.length < 5) {
+            alert('Escribe al menos una idea básica de tu negocio primero.');
+            return;
+        }
+        setIsAiLoading(true);
+        try {
+            const model = ai.models.generateContent({ model: 'gemini-2.5-flash', contents: `Actúa como un experto en copywriting y marketing para emprendedores.
+            Reescribe la siguiente descripción de un negocio para que sea más atractiva, persuasiva, corta (máximo 2 frases) y profesional. 
+            Descripción original: "${description}"` });
+            
+            const response = await model;
+            const text = response.text;
+            
+            if (text) {
+                setDescription(text.trim());
+            }
+        } catch (error) {
+            console.error("Error AI:", error);
+            alert("Hubo un error al conectar con la IA. Inténtalo de nuevo.");
+        } finally {
+            setIsAiLoading(false);
         }
     };
 
@@ -740,24 +773,6 @@ function PreRegisterForm({ onBack }: { onBack: () => void }) {
         }
     };
 
-    // LOCK SCREEN
-    if (wizardStep === 'lock') {
-        return (
-            <div className="container" style={{paddingTop: '120px', minHeight: '80vh', display: 'flex', justifyContent: 'center'}}>
-                <div className="card p-40" style={{maxWidth: '400px', width: '100%', textAlign: 'center'}}>
-                    <div style={{color: '#e1306c', marginBottom: '20px'}}><LockIcon /></div>
-                    <h2 style={{marginBottom: '10px'}}>Acceso Restringido</h2>
-                    <p className="text-gray mb-medium">Esta zona es exclusiva para miembros del grupo.</p>
-                    <form onSubmit={handleUnlock}>
-                        <input type="password" className="lock-input" placeholder="Clave del grupo" value={accessCode} onChange={(e) => setAccessCode(e.target.value)} autoFocus />
-                        <button className="btn btn-dark btn-block mt-small">Desbloquear</button>
-                    </form>
-                    <button onClick={onBack} className="btn-link mt-medium">Volver al Inicio</button>
-                </div>
-            </div>
-        );
-    }
-
     // SUCCESS SCREEN
     if (wizardStep === 'success') {
         return (
@@ -775,92 +790,132 @@ function PreRegisterForm({ onBack }: { onBack: () => void }) {
     }
 
     return (
-        <div className="container" style={{paddingTop: '100px', minHeight: '100vh', paddingBottom: '50px', maxWidth: '800px'}}>
-             <div className="card p-40">
-                 <div className="text-center mb-medium">
-                    <div className="badge-secure"><LockIcon /> Zona Tribu</div>
-                    <h2>Alta de Emprendedor</h2>
-                    <p className="text-gray">Completa los pasos para unirte al sorteo.</p>
-                 </div>
+        <div style={{background: '#f8fafc', minHeight: '100vh', paddingTop: '100px', paddingBottom: '80px'}}>
+             <div className="container" style={{maxWidth: '800px'}}>
                  
-                 {/* WIZARD STEPS INDICATOR */}
-                 <div className="steps-visual" style={{marginBottom: '40px'}}>
-                    <div className="step-item">
-                        <div className="step-num" style={{background: wizardStep === 'member' ? '#2d3436' : '#00b894'}}>1</div>
-                        <p>Datos Básicos</p>
-                    </div>
-                    <div className="step-line" style={{background: wizardStep === 'business' ? '#00b894' : '#dfe6e9'}}></div>
-                    <div className="step-item">
-                         <div className="step-num" style={{background: wizardStep === 'business' ? '#2d3436' : '#dfe6e9'}}>2</div>
-                        <p>Ficha de Negocio</p>
-                    </div>
-                </div>
+                 {/* PORTAL HEADER */}
+                 <div className="portal-header text-center mb-medium">
+                     <button onClick={onBack} className="btn-link-back">← Volver al inicio</button>
+                     <div className="portal-icon-float"><RocketIcon /></div>
+                     <h1 className="portal-title">Portal de Emprendedores</h1>
+                     <p className="portal-subtitle">Únete a la comunidad, destaca tu marca y participa en la gran dinámica de premios.</p>
+                 </div>
 
-                 {wizardStep === 'member' && (
-                     <form onSubmit={handleMemberSubmit} className="clean-form">
-                         <div className="form-group"><label>Tu Nombre Completo</label><input type="text" value={memberName} onChange={e => setMemberName(e.target.value)} required placeholder="Ej. Juan Pérez" /></div>
-                         <div className="form-group"><label>Nombre de tu Negocio</label><input type="text" value={memberBusiness} onChange={e => setMemberBusiness(e.target.value)} required placeholder="Ej. Mi Tienda SAC" /></div>
-                         <div className="form-group"><label>Número de Celular</label>
-                             <div className="input-with-icon"><span className="input-icon"><PhoneIcon /></span><input type="tel" value={memberPhone} onChange={e => setMemberPhone(e.target.value)} required placeholder="Ej. 999123456" /></div>
-                         </div>
-                         {status === 'error' && <p className="error-text mb-medium">{errorMsg}</p>}
-                         <button className="btn btn-primary btn-block btn-large" disabled={status === 'loading'}>
-                             {status === 'loading' ? 'Guardando...' : 'Continuar al Paso 2'}
-                         </button>
-                     </form>
-                 )}
+                 <div className="card p-40 shadow-xl border-t-brand">
+                     {/* WIZARD STEPS INDICATOR */}
+                     <div className="steps-visual" style={{marginBottom: '40px'}}>
+                        <div className={`step-item ${wizardStep === 'member' ? 'active' : 'completed'}`}>
+                            <div className="step-num">1</div>
+                            <p>Tus Datos</p>
+                        </div>
+                        <div className="step-line"></div>
+                        <div className={`step-item ${wizardStep === 'business' ? 'active' : ''}`}>
+                             <div className="step-num">2</div>
+                            <p>Tu Negocio</p>
+                        </div>
+                    </div>
 
-                 {wizardStep === 'business' && (
-                     <form onSubmit={handleBusinessSubmit} className="clean-form">
-                        <div className="form-row">
-                            <div className="form-group" style={{flex: 1}}>
-                                <label>Logo (1:1)</label>
-                                <label className="mini-upload">
-                                    {logoPreview ? <img src={logoPreview} className="mini-preview" /> : <div className="mini-placeholder"><ImageIcon /> Subir</div>}
-                                    <input type="file" ref={logoInputRef} onChange={(e) => handleImageChange(e, 'logo')} className="hidden" accept="image/*"/>
-                                </label>
-                            </div>
-                            <div style={{flex: 2}}>
-                                <div className="form-group"><label>Rubro</label>
-                                    <select value={category} onChange={(e) => { setCategory(e.target.value); if(e.target.value !== 'Otro') setCustomCategory(''); }} className="form-select">
+                     {wizardStep === 'member' && (
+                         <form onSubmit={handleMemberSubmit} className="clean-form">
+                             <div className="form-group-large">
+                                 <label>Tu Nombre Completo</label>
+                                 <input type="text" value={memberName} onChange={e => setMemberName(e.target.value)} required placeholder="Ej. Juan Pérez" autoFocus />
+                             </div>
+                             
+                             <div className="form-group-large">
+                                 <label>Nombre de tu Negocio</label>
+                                 <div className="input-with-icon">
+                                     <span className="input-icon"><BriefcaseIcon /></span>
+                                     <input type="text" value={memberBusiness} onChange={e => setMemberBusiness(e.target.value)} required placeholder="Ej. Mi Tienda SAC" />
+                                 </div>
+                             </div>
+
+                             <div className="form-group-large">
+                                 <label>Número de WhatsApp (Contacto)</label>
+                                 <div className="input-with-icon">
+                                     <span className="input-icon"><WhatsAppIcon /></span>
+                                     <input type="tel" value={memberPhone} onChange={e => setMemberPhone(e.target.value)} required placeholder="Ej. 999123456" />
+                                 </div>
+                                 <p className="input-hint">Te contactaremos por aquí si ganas.</p>
+                             </div>
+
+                             {status === 'error' && <p className="error-text mb-medium">{errorMsg}</p>}
+                             
+                             <button className="btn btn-primary btn-block btn-giant-form" disabled={status === 'loading'}>
+                                 {status === 'loading' ? 'Guardando...' : 'Comenzar Registro →'}
+                             </button>
+                         </form>
+                     )}
+
+                     {wizardStep === 'business' && (
+                         <form onSubmit={handleBusinessSubmit} className="clean-form">
+                            <div className="grid-2-col">
+                                <div className="form-group">
+                                    <label>Logo de tu Marca</label>
+                                    <label className="upload-box-modern">
+                                        {logoPreview ? <img src={logoPreview} className="upload-preview-img" /> : <div className="upload-placeholder-content"><ImageIcon /><span className="upload-text">Subir Logo</span></div>}
+                                        <input type="file" ref={logoInputRef} onChange={(e) => handleImageChange(e, 'logo')} className="hidden" accept="image/*"/>
+                                    </label>
+                                </div>
+                                <div className="form-group">
+                                    <label>Rubro / Categoría</label>
+                                    <select value={category} onChange={(e) => { setCategory(e.target.value); if(e.target.value !== 'Otro') setCustomCategory(''); }} className="form-select-large">
                                         {PREDEFINED_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
-                                    {category === 'Otro' && <input type="text" className="input-custom-category" placeholder="Especifica..." value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} required />}
+                                    {category === 'Otro' && <input type="text" className="input-custom-category mt-2" placeholder="Especifica tu rubro..." value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} required />}
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="form-group"><label>Redes Sociales</label>
-                            <div className="social-grid">
-                                <input type="text" placeholder="Instagram (Ej. @mi_marca)" value={instagram} onChange={(e) => setInstagram(e.target.value)} />
-                                <input type="text" placeholder="Facebook Link" value={facebook} onChange={(e) => setFacebook(e.target.value)} />
-                                <input type="text" placeholder="TikTok Link" value={tiktok} onChange={(e) => setTiktok(e.target.value)} />
-                                <input type="text" placeholder="Web" value={website} onChange={(e) => setWebsite(e.target.value)} />
+                            <div className="form-group mt-medium"><label>Redes Sociales (Opcional)</label>
+                                <div className="social-inputs-grid">
+                                    <div className="input-with-icon social"><span className="input-icon instagram"><InstagramIcon /></span><input type="text" placeholder="@usuario" value={instagram} onChange={(e) => setInstagram(e.target.value)} /></div>
+                                    <div className="input-with-icon social"><span className="input-icon facebook"><FacebookIcon /></span><input type="text" placeholder="Facebook URL" value={facebook} onChange={(e) => setFacebook(e.target.value)} /></div>
+                                    <div className="input-with-icon social"><span className="input-icon tiktok"><TikTokIcon /></span><input type="text" placeholder="TikTok URL" value={tiktok} onChange={(e) => setTiktok(e.target.value)} /></div>
+                                    <div className="input-with-icon social"><span className="input-icon website"><GlobeIcon /></span><input type="text" placeholder="www.tuweb.com" value={website} onChange={(e) => setWebsite(e.target.value)} /></div>
+                                </div>
                             </div>
-                        </div>
-                        <div className="form-group"><label>Reseña Corta</label><textarea rows={2} placeholder="¿Qué hace tu negocio?" value={description} onChange={(e) => setDescription(e.target.value)} className="form-textarea" required /></div>
+                            
+                            <div className="form-group ai-section">
+                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px'}}>
+                                    <label style={{marginBottom: 0}}>Descripción del Negocio</label>
+                                    <button type="button" onClick={improveDescriptionWithAI} disabled={isAiLoading} className="btn-ai-magic-glow">
+                                        {isAiLoading ? <LoaderIcon /> : <SparkleIcon />} {isAiLoading ? 'Redactando...' : 'Mejorar con IA'}
+                                    </button>
+                                </div>
+                                <textarea rows={3} placeholder="Cuéntanos brevemente qué vendes o qué servicio ofreces..." value={description} onChange={(e) => setDescription(e.target.value)} className="form-textarea-large" required />
+                            </div>
 
-                        <div className="form-section-label mt-medium"><span className="section-num">2</span><h3>El Premio</h3></div>
-                        <div className="form-row">
-                            <div className="form-group" style={{flex: 2}}><label>Premio a aportar</label><input type="text" value={prize} onChange={(e) => setPrize(e.target.value)} required placeholder="Ej. Pack de productos" /></div>
-                            <div className="form-group" style={{flex: 1}}><label>Valor (S/)</label><input type="text" value={value} onChange={(e) => setValue(e.target.value)} required placeholder="Ej. 50.00" /></div>
-                        </div>
-                        <div className="form-group">
-                            <label>Foto del Premio</label>
-                            <label className="upload-area">
-                                {prizePreview ? <div className="preview-container"><img src={prizePreview} /></div> : <div className="upload-placeholder"><ImageIcon /><span>Subir Foto del Premio</span></div>}
-                                <input type="file" accept="image/*" ref={prizeInputRef} onChange={(e) => handleImageChange(e, 'prize')} className="hidden" />
-                            </label>
-                        </div>
-                        <div className="terms-checkbox">
-                            <label><input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} /><span>Me comprometo a entregar el premio.</span></label>
-                        </div>
-                        {status === 'error' && <p className="error-text mb-medium">{errorMsg}</p>}
-                        <button type="submit" className="btn btn-primary btn-block btn-large" disabled={status === 'loading'}>
-                             {status === 'loading' ? <span style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'}}><LoaderIcon /> Publicando...</span> : 'Finalizar Inscripción'}
-                        </button>
-                     </form>
-                 )}
+                            <div className="separator-line"></div>
+                            <div className="form-section-label"><span className="section-icon"><GiftIcon /></span><h3>Tu Aporte (Premio)</h3></div>
+                            
+                            <div className="grid-2-col">
+                                <div className="form-group"><label>¿Qué vas a sortear?</label><input type="text" value={prize} onChange={(e) => setPrize(e.target.value)} required placeholder="Ej. Vale de consumo, Producto X..." className="input-large" /></div>
+                                <div className="form-group"><label>Valor Aprox. (S/)</label><input type="text" value={value} onChange={(e) => setValue(e.target.value)} required placeholder="Ej. 50.00" className="input-large" /></div>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Foto del Premio (Importante)</label>
+                                <label className="upload-box-wide">
+                                    {prizePreview ? <div className="preview-wide"><img src={prizePreview} /></div> : <div className="upload-placeholder-content"><ImageIcon /><span className="upload-text">Subir Foto Atractiva del Premio</span></div>}
+                                    <input type="file" accept="image/*" ref={prizeInputRef} onChange={(e) => handleImageChange(e, 'prize')} className="hidden" />
+                                </label>
+                            </div>
+
+                            <div className="terms-checkbox-styled">
+                                <label>
+                                    <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} />
+                                    <span className="checkbox-custom"></span>
+                                    <span className="label-text">Me comprometo a entregar este premio al ganador del sorteo.</span>
+                                </label>
+                            </div>
+                            
+                            {status === 'error' && <p className="error-text mb-medium">{errorMsg}</p>}
+                            <button type="submit" className="btn btn-primary btn-block btn-giant-form" disabled={status === 'loading'}>
+                                 {status === 'loading' ? <span style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'}}><LoaderIcon /> Publicando...</span> : 'Finalizar y Publicar'}
+                            </button>
+                         </form>
+                     )}
+                 </div>
              </div>
         </div>
     );
@@ -1105,7 +1160,7 @@ function App() {
       setSecretClicks(prev => {
           const newCount = prev + 1;
           if (newCount >= 5) {
-              setViewMode('preregister');
+              setViewMode('admin');
               return 0;
           }
           return newCount;
@@ -1233,6 +1288,7 @@ function App() {
                 <span>SorteoTribu</span>
             </div>
             <div className="nav-actions">
+                {/* Entrepreneur Button removed for security */}
                 <button onClick={() => scrollToSection('gallery')} className="nav-link">Premios</button>
                 <button onClick={openDirectory} className="nav-link">Directorio</button>
                 <button onClick={openClientModal} className="btn btn-primary">
@@ -1268,6 +1324,7 @@ function App() {
                     <button onClick={openClientModal} className="btn btn-giant">
                         <GiftIcon /> QUIERO MI PREMIO
                     </button>
+                    {/* Secondary button removed for security */}
                 </div>
 
                 {/* NEW: InfoMercado Badge in Hero */}
