@@ -46,33 +46,10 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         </div>
       );
     }
-    return this.props.children;
+    // Cast this to any to avoid "Property 'props' does not exist" type error
+    return (this as any).props.children;
   }
 }
-
-// --- SAFE ENV CHECK ---
-// Avoids "process is not defined" crashes in Vite/Vercel
-const getSafeApiKey = () => {
-  try {
-    // 1. Try Vite / Modern Standard
-    // @ts-ignore
-    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_KEY) {
-      // @ts-ignore
-      return import.meta.env.VITE_API_KEY;
-    }
-    // 2. Try Node/Webpack Standard (safely accessed via window/globalThis)
-    const g = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : {};
-    // @ts-ignore
-    const p = g.process || (typeof process !== 'undefined' ? process : undefined);
-    
-    if (p && p.env && p.env.API_KEY) {
-      return p.env.API_KEY;
-    }
-  } catch (e) {
-    console.warn("Env check failed silently", e);
-  }
-  return ''; 
-};
 
 // --- SUPABASE CONFIGURATION ---
 const SUPABASE_URL = 'https://epyqaqxlgqcxbenaydct.supabase.co';
@@ -83,12 +60,8 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --- GEMINI AI HELPER ---
 const getAiModel = () => {
-    const apiKey = getSafeApiKey();
-    // Safety check: Don't crash if key is missing, just let the call fail later or handle it
-    if (!apiKey) {
-        console.warn("API Key missing for AI Model");
-    }
-    const ai = new GoogleGenAI({ apiKey: apiKey || 'dummy_key_to_prevent_crash' });
+    // Use process.env.API_KEY directly as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     return ai;
 };
 
@@ -198,7 +171,7 @@ const PlusIcon = () => (
 );
 
 const EyeIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
 );
 
 const EditIcon = () => (
