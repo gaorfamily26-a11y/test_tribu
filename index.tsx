@@ -1,24 +1,96 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI } from "@google/genai";
 
-// --- POLYFILL FOR VERCEL/BROWSER ENVIRONMENTS (FIX WHITE SCREEN) ---
-// This prevents "ReferenceError: process is not defined" crashing the app
-if (typeof process === 'undefined') {
-  (window as any).process = { env: { API_KEY: '' } };
+// --- ERROR BOUNDARY (Fixes White Screen by showing the error) ---
+interface ErrorBoundaryProps {
+  children?: React.ReactNode;
 }
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  public state: ErrorBoundaryState = { hasError: false, error: null };
+
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("Uncaught error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '40px', fontFamily: 'sans-serif', textAlign: 'center' }}>
+          <h1 style={{ color: '#e1306c' }}>Algo salió mal :(</h1>
+          <p>Hubo un error al cargar la aplicación.</p>
+          <pre style={{ background: '#f1f5f9', padding: '20px', borderRadius: '8px', overflow: 'auto', textAlign: 'left', fontSize: '0.8rem' }}>
+            {this.state.error?.toString()}
+          </pre>
+          <button 
+            onClick={() => window.location.reload()} 
+            style={{ marginTop: '20px', padding: '10px 20px', background: '#e1306c', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+          >
+            Recargar Página
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// --- SAFE ENV CHECK ---
+// Avoids "process is not defined" crashes in Vite/Vercel
+const getSafeApiKey = () => {
+  try {
+    // 1. Try Vite / Modern Standard
+    // @ts-ignore
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_KEY) {
+      // @ts-ignore
+      return import.meta.env.VITE_API_KEY;
+    }
+    // 2. Try Node/Webpack Standard (safely accessed via window/globalThis)
+    const g = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : {};
+    // @ts-ignore
+    const p = g.process || (typeof process !== 'undefined' ? process : undefined);
+    
+    if (p && p.env && p.env.API_KEY) {
+      return p.env.API_KEY;
+    }
+  } catch (e) {
+    console.warn("Env check failed silently", e);
+  }
+  return ''; 
+};
 
 // --- SUPABASE CONFIGURATION ---
 const SUPABASE_URL = 'https://epyqaqxlgqcxbenaydct.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVweXFhcXhsZ3FjeGJlbmF5ZGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3NzAyOTIsImV4cCI6MjA4MDM0NjI5Mn0.4FKPSM-UfQlfrKQoXRnBps9RLCX2MT8HkqcQlEHgc5Q';
 
+// Initialize Supabase safely
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// --- GEMINI AI CONFIGURATION ---
-// Note: API Key comes from process.env.API_KEY automatically in this environment
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// --- GEMINI AI HELPER ---
+const getAiModel = () => {
+    const apiKey = getSafeApiKey();
+    // Safety check: Don't crash if key is missing, just let the call fail later or handle it
+    if (!apiKey) {
+        console.warn("API Key missing for AI Model");
+    }
+    const ai = new GoogleGenAI({ apiKey: apiKey || 'dummy_key_to_prevent_crash' });
+    return ai;
+};
 
 // Icons
 const GiftIcon = () => (
@@ -726,6 +798,8 @@ function PreRegisterForm({ onBack }: { onBack: () => void }) {
         }
         setIsAiLoading(true);
         try {
+            // Using local init to prevent global crash
+            const ai = getAiModel();
             const model = ai.models.generateContent({ model: 'gemini-2.5-flash', contents: `Actúa como un experto en copywriting y marketing para emprendedores.
             Reescribe la siguiente descripción de un negocio para que sea más atractiva, persuasiva, corta (máximo 2 frases) y profesional. 
             Descripción original: "${description}"` });
@@ -1727,5 +1801,16 @@ function App() {
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
-  createRoot(rootElement).render(<App />);
+  try {
+      const root = createRoot(rootElement);
+      root.render(
+          <ErrorBoundary>
+              <App />
+          </ErrorBoundary>
+      );
+  } catch (err) {
+      console.error("Critical Render Error:", err);
+      // Fallback manual render if React fails hard
+      rootElement.innerHTML = '<div style="padding:20px;text-align:center"><h1>Error Crítico</h1><p>La aplicación no pudo iniciar. Revisa la consola.</p></div>';
+  }
 }
