@@ -1,7 +1,14 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI } from "@google/genai";
+
+// --- POLYFILL FOR VERCEL/BROWSER ENVIRONMENTS (FIX WHITE SCREEN) ---
+// This prevents "ReferenceError: process is not defined" crashing the app
+if (typeof process === 'undefined') {
+  (window as any).process = { env: { API_KEY: '' } };
+}
 
 // --- SUPABASE CONFIGURATION ---
 const SUPABASE_URL = 'https://epyqaqxlgqcxbenaydct.supabase.co';
@@ -929,12 +936,14 @@ function ClientRegistrationModal({ onClose }: { onClose: () => void }) {
     const [ticketCode, setTicketCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [randomBrands, setRandomBrands] = useState<Entrepreneur[]>([]);
+    
+    // NEW: Track which brands have been clicked
+    const [clickedBrands, setClickedBrands] = useState<Set<string>>(new Set());
 
     const fetchRandomBrands = async () => {
         // Fetch 3 random brands to follow
         const { data } = await supabase.from('entrepreneurs').select('*').limit(3);
         if (data) {
-            // Need to map structure
              const mapped: Entrepreneur[] = data.map(item => ({
                   id: item.id,
                   name: item.business_name,
@@ -964,6 +973,19 @@ function ClientRegistrationModal({ onClose }: { onClose: () => void }) {
         }, 800);
     };
 
+    // NEW: Handle Brand Click to Track it
+    const handleBrandClick = (brandId: string, instagramHandle: string) => {
+        const url = `https://instagram.com/${instagramHandle.replace('@','')}`;
+        window.open(url, '_blank');
+        
+        // Add to set
+        setClickedBrands(prev => {
+            const newSet = new Set(prev);
+            newSet.add(brandId);
+            return newSet;
+        });
+    };
+
     const handleGenerateTicket = async () => {
         setIsLoading(true);
         try {
@@ -986,6 +1008,9 @@ function ClientRegistrationModal({ onClose }: { onClose: () => void }) {
             setIsLoading(false);
         }
     };
+
+    // Check if all displayed brands have been clicked
+    const allBrandsClicked = randomBrands.length > 0 && clickedBrands.size >= randomBrands.length;
 
     return (
         <div className="modal-overlay">
@@ -1025,33 +1050,51 @@ function ClientRegistrationModal({ onClose }: { onClose: () => void }) {
                         </div>
                         
                         <div className="mission-list">
-                            {randomBrands.map((brand) => (
-                                <div key={brand.id} className="mission-item">
-                                    <img src={brand.logoImage} alt="logo" className="mission-img" />
-                                    <div className="mission-info">
-                                        <strong>{brand.name}</strong>
-                                        <span>{brand.instagram}</span>
+                            {randomBrands.map((brand) => {
+                                const isClicked = clickedBrands.has(brand.id);
+                                return (
+                                    <div key={brand.id} className="mission-item" style={{opacity: isClicked ? 0.6 : 1, borderColor: isClicked ? '#2ecc71' : '#e2e8f0'}}>
+                                        <img src={brand.logoImage} alt="logo" className="mission-img" />
+                                        <div className="mission-info">
+                                            <strong>{brand.name}</strong>
+                                            <span>{brand.instagram}</span>
+                                        </div>
+                                        <button 
+                                            className="btn-follow-small"
+                                            style={{
+                                                background: isClicked ? '#2ecc71' : '#e1306c',
+                                                color: 'white',
+                                                border: 'none'
+                                            }}
+                                            onClick={() => handleBrandClick(brand.id, brand.instagram)}
+                                        >
+                                            {isClicked ? 'Visto ✓' : 'Seguir'}
+                                        </button>
                                     </div>
-                                    <button 
-                                        className="btn-follow-small"
-                                        onClick={() => window.open(`https://instagram.com/${brand.instagram.replace('@','')}`, '_blank')}
-                                    >
-                                        Seguir
-                                    </button>
-                                </div>
-                            ))}
+                                );
+                            })}
                             {randomBrands.length === 0 && <p>Cargando marcas...</p>}
                         </div>
 
                         <div className="terms-checkbox">
                             <label>
                                 <input type="checkbox" required />
-                                <span>Confirmo que he seguido a las cuentas para participar.</span>
+                                <span>Confirmo que he seguido a las cuentas.</span>
                             </label>
                         </div>
+                        
+                        {/* WARNING NOTICE */}
+                        <div className="warning-box mt-small mb-medium" style={{background: '#fff1f2', padding: '10px', borderRadius: '8px', fontSize: '0.8rem', color: '#be123c', border: '1px solid #fda4af'}}>
+                            ⚠️ Importante: Si sales sorteado, verificaremos manualmente que sigas a estas cuentas. Si no las sigues, se anulará tu premio.
+                        </div>
 
-                        <button onClick={handleGenerateTicket} className="btn btn-primary btn-block" disabled={isLoading}>
-                            {isLoading ? 'Generando...' : '¡Listo! Generar Ticket'}
+                        <button 
+                            onClick={handleGenerateTicket} 
+                            className="btn btn-primary btn-block" 
+                            disabled={isLoading || !allBrandsClicked}
+                            style={{ opacity: allBrandsClicked ? 1 : 0.5, cursor: allBrandsClicked ? 'pointer' : 'not-allowed' }}
+                        >
+                            {isLoading ? 'Generando...' : (!allBrandsClicked ? 'Debes visitar las marcas...' : '¡Listo! Generar Ticket')}
                         </button>
                     </div>
                 )}
