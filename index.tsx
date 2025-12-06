@@ -51,7 +51,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 }
 
-// --- SUPABASE CONFIGURATION (Fixed Connection Error) ---
+// --- SUPABASE CONFIGURATION ---
 const SUPABASE_URL = 'https://epyqaqxlgqcxbenaydct.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVweXFhcXhsZ3FjeGJlbmF5ZGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3NzAyOTIsImV4cCI6MjA4MDM0NjI5Mn0.4FKPSM-UfQlfrKQoXRnBps9RLCX2MT8HkqcQlEHgc5Q';
 
@@ -1259,23 +1259,50 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
     const handleGenerateTicket = async () => {
         setIsLoading(true);
         try {
+            // 1. Limpiar y validar teléfono
+            const cleanPhone = phone.replace(/\D/g, '').trim();
+            
+            if (!cleanPhone || cleanPhone.length < 9) {
+                alert('Por favor verifica tu número de celular.');
+                setIsLoading(false);
+                return;
+            }
+
+            // 2. Verificar duplicados en la base de datos
+            const { data: existingRecords, error: checkError } = await supabase
+                .from('clients')
+                .select('ticket_code, name')
+                .eq('phone', cleanPhone);
+
+            if (checkError) {
+                console.error("Error verificando duplicados:", checkError);
+            }
+
+            if (existingRecords && existingRecords.length > 0) {
+                const rec = existingRecords[0];
+                alert(`⚠️ ¡Ya estás participando!\n\nHola ${rec.name}, el número ${cleanPhone} ya tiene el ticket N° ${rec.ticket_code}.\n\nNo es necesario registrarse nuevamente.`);
+                setIsLoading(false);
+                return; // DETENER PROCESO
+            }
+
+            // 3. Generar Ticket si no existe
             const code = `#TRIBU-${Math.floor(1000 + Math.random() * 9000)}`;
             
-            const cleanPhone = phone.replace(/\D/g, '');
-
-            const { error } = await supabase.from('clients').insert([{
-                name: name,
+            const { error: insertError } = await supabase.from('clients').insert([{
+                name: name.toUpperCase(), // Guardar en mayúsculas para consistencia
                 phone: cleanPhone,
                 ticket_code: code
             }]);
 
-            if (error) throw error;
+            if (insertError) throw insertError;
 
+            // 4. Éxito
             setTicketCode(code);
             setStep('ticket');
-        } catch (err) {
-            console.error(err);
-            alert('Error al generar ticket. Inténtalo de nuevo.');
+
+        } catch (err: any) {
+            console.error("Critical error generating ticket:", err);
+            alert('Error al conectar con el servidor. Intenta de nuevo.');
         } finally {
             setIsLoading(false);
         }
