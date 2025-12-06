@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI } from "@google/genai";
+import html2canvas from 'html2canvas';
 
 // --- ERROR BOUNDARY (Fixes White Screen by showing the error) ---
 interface ErrorBoundaryProps {
@@ -46,7 +47,6 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         </div>
       );
     }
-    // Cast this to any to avoid "Property 'props' does not exist" type error
     return (this as any).props.children;
   }
 }
@@ -58,10 +58,25 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Initialize Supabase safely
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// --- GEMINI AI HELPER ---
+// --- GEMINI AI HELPER (SAFE) ---
 const getAiModel = () => {
-    // Use process.env.API_KEY directly as per guidelines
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Safety check for process.env to prevent white screen crashes
+    let apiKey = '';
+    try {
+        if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+            apiKey = process.env.API_KEY;
+        }
+    } catch (e) {
+        console.warn("Environment variable access failed", e);
+    }
+    
+    // If no key, we return a mock or handle it gracefully rather than crashing app load
+    if (!apiKey) {
+        console.warn("API Key missing. AI features will be disabled.");
+        return null;
+    }
+
+    const ai = new GoogleGenAI({ apiKey: apiKey });
     return ai;
 };
 
@@ -208,6 +223,10 @@ const BriefcaseIcon = () => (
 
 const RocketIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"></path><path d="M9 22h6"></path><path d="M12 2v8"></path><path d="M12 10a5 5 0 0 0-5 5v3a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-3a5 5 0 0 0-5-5z"></path></svg>
+);
+
+const CameraIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
 );
 
 // --- INTERACTIVE CONFETTI COMPONENT ---
@@ -499,9 +518,16 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     const handleUpdateMember = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingMember) return;
+        
+        const cleanPhone = editingMember.phone.replace(/\D/g, '');
+        if (!/^9\d{8}$/.test(cleanPhone)) {
+            alert('El número debe ser un celular válido de Perú (9 dígitos, empieza con 9)');
+            return;
+        }
+
         try {
             const { error } = await supabase.from('members').update({
-                    name: editingMember.name, business_name: editingMember.business_name, phone: editingMember.phone.replace(/\D/g, '')
+                    name: editingMember.name, business_name: editingMember.business_name, phone: cleanPhone
                 }).eq('id', editingMember.id);
             if (error) throw error;
             setMembers(members.map(m => m.id === editingMember.id ? editingMember : m));
@@ -512,10 +538,17 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     const handleUpdateEnrolled = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingEnrolled) return;
+        
+        const cleanPhone = editingEnrolled.phone.replace(/\D/g, '');
+        if (!/^9\d{8}$/.test(cleanPhone)) {
+            alert('El número debe ser un celular válido de Perú (9 dígitos, empieza con 9)');
+            return;
+        }
+
         try {
              const { error } = await supabase.from('entrepreneurs').update({
                     business_name: editingEnrolled.name, owner_name: editingEnrolled.ownerName,
-                    phone: editingEnrolled.phone, prize: editingEnrolled.prize, prize_value: editingEnrolled.value,
+                    phone: cleanPhone, prize: editingEnrolled.prize, prize_value: editingEnrolled.value,
                     category: editingEnrolled.category, instagram: editingEnrolled.instagram,
                     facebook: editingEnrolled.facebook, tiktok: editingEnrolled.tiktok, website: editingEnrolled.website,
                     description: editingEnrolled.description
@@ -641,7 +674,19 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                         <form onSubmit={handleUpdateMember} className="clean-form">
                             <div className="form-group"><label>Nombre</label><input type="text" value={editingMember.name} onChange={(e) => setEditingMember({...editingMember, name: e.target.value})} required /></div>
                             <div className="form-group"><label>Negocio</label><input type="text" value={editingMember.business_name} onChange={(e) => setEditingMember({...editingMember, business_name: e.target.value})} required /></div>
-                            <div className="form-group"><label>Celular</label><input type="tel" value={editingMember.phone} onChange={(e) => setEditingMember({...editingMember, phone: e.target.value})} required /></div>
+                            <div className="form-group"><label>Celular</label>
+                                <input 
+                                    type="tel" 
+                                    value={editingMember.phone} 
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '').slice(0, 9);
+                                        setEditingMember({...editingMember, phone: val});
+                                    }} 
+                                    maxLength={9}
+                                    placeholder="9..."
+                                    required 
+                                />
+                            </div>
                             <div className="form-footer"><button type="submit" className="btn btn-primary btn-block">Guardar</button></div>
                         </form>
                     </div>
@@ -662,6 +707,19 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                                 <div className="form-group" style={{flex: 2}}><label>Premio</label><input type="text" value={editingEnrolled.prize} onChange={(e) => setEditingEnrolled({...editingEnrolled, prize: e.target.value})} required /></div>
                                  <div className="form-group" style={{flex: 1}}><label>Valor</label><input type="text" value={editingEnrolled.value} onChange={(e) => setEditingEnrolled({...editingEnrolled, value: e.target.value})} required /></div>
                             </div>
+                             <div className="form-group"><label>Celular</label>
+                                <input 
+                                    type="tel" 
+                                    value={editingEnrolled.phone} 
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '').slice(0, 9);
+                                        setEditingEnrolled({...editingEnrolled, phone: val});
+                                    }} 
+                                    maxLength={9}
+                                    placeholder="9..."
+                                    required 
+                                />
+                             </div>
                              <div className="form-group"><label>Redes</label><div className="social-grid">
                                 <input type="text" placeholder="IG" value={editingEnrolled.instagram} onChange={(e) => setEditingEnrolled({...editingEnrolled, instagram: e.target.value})} />
                                 <input type="text" placeholder="FB" value={editingEnrolled.facebook || ''} onChange={(e) => setEditingEnrolled({...editingEnrolled, facebook: e.target.value})} />
@@ -735,17 +793,18 @@ function PreRegisterForm({ onBack }: { onBack: () => void }) {
         setErrorMsg('');
         
         try {
-            const cleanPhone = memberPhone.replace(/\D/g, '');
-            if (cleanPhone.length < 9) throw new Error("El teléfono debe tener al menos 9 dígitos");
+            // Validate Phone
+            if (memberPhone.length !== 9 || !memberPhone.startsWith('9')) {
+                throw new Error("El teléfono debe ser un celular válido de Perú (9 dígitos, empieza con 9)");
+            }
             
             // Upsert member
             const { error } = await supabase.from('members').upsert([{ 
-                phone: cleanPhone, name: memberName, business_name: memberBusiness 
+                phone: memberPhone, name: memberName, business_name: memberBusiness 
             }], { onConflict: 'phone' });
             
             if (error) throw error;
             
-            setMemberPhone(cleanPhone);
             setStatus('idle');
             setWizardStep('business');
         } catch (err: any) {
@@ -773,6 +832,11 @@ function PreRegisterForm({ onBack }: { onBack: () => void }) {
         try {
             // Using local init to prevent global crash
             const ai = getAiModel();
+            if (!ai) {
+                alert("La IA no está disponible en este momento (Falta API Key).");
+                return;
+            }
+            
             const model = ai.models.generateContent({ model: 'gemini-2.5-flash', contents: `Actúa como un experto en copywriting y marketing para emprendedores.
             Reescribe la siguiente descripción de un negocio para que sea más atractiva, persuasiva, corta (máximo 2 frases) y profesional. 
             Descripción original: "${description}"` });
@@ -888,7 +952,17 @@ function PreRegisterForm({ onBack }: { onBack: () => void }) {
                                  <label>Número de WhatsApp (Contacto)</label>
                                  <div className="input-with-icon">
                                      <span className="input-icon"><WhatsAppIcon /></span>
-                                     <input type="tel" value={memberPhone} onChange={e => setMemberPhone(e.target.value)} required placeholder="Ej. 999123456" />
+                                     <input 
+                                        type="tel" 
+                                        value={memberPhone} 
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/\D/g, '').slice(0, 9);
+                                            setMemberPhone(val);
+                                        }}
+                                        maxLength={9}
+                                        required 
+                                        placeholder="Ej. 999123456" 
+                                     />
                                  </div>
                                  <p className="input-hint">Te contactaremos por aquí si ganas.</p>
                              </div>
@@ -975,14 +1049,16 @@ function PreRegisterForm({ onBack }: { onBack: () => void }) {
     );
 }
 
-// ... [ClientRegistrationModal kept same]
-function ClientRegistrationModal({ onClose }: { onClose: () => void }) {
+// ... [ClientRegistrationModal UPDATED]
+function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => void, onGoToDirectory: () => void }) {
     const [step, setStep] = useState<'form' | 'mission' | 'ticket'>('form');
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [ticketCode, setTicketCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [randomBrands, setRandomBrands] = useState<Entrepreneur[]>([]);
+    const [isDownloading, setIsDownloading] = useState(false);
+    const ticketRef = useRef<HTMLDivElement>(null);
     
     // NEW: Track which brands have been clicked
     const [clickedBrands, setClickedBrands] = useState<Set<string>>(new Set());
@@ -1011,6 +1087,13 @@ function ClientRegistrationModal({ onClose }: { onClose: () => void }) {
 
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // STRICT PERUVIAN PHONE VALIDATION
+        if (phone.length !== 9 || !phone.startsWith('9')) {
+            alert('Por favor, ingresa un número de celular válido de Perú (9 dígitos, empieza con 9).');
+            return;
+        }
+
         setIsLoading(true);
         // Simulate check
         setTimeout(() => {
@@ -1038,9 +1121,11 @@ function ClientRegistrationModal({ onClose }: { onClose: () => void }) {
         try {
             const code = `#TRIBU-${Math.floor(1000 + Math.random() * 9000)}`;
             
+            const cleanPhone = phone.replace(/\D/g, '');
+
             const { error } = await supabase.from('clients').insert([{
                 name: name,
-                phone: phone,
+                phone: cleanPhone,
                 ticket_code: code
             }]);
 
@@ -1056,118 +1141,191 @@ function ClientRegistrationModal({ onClose }: { onClose: () => void }) {
         }
     };
 
+    const handleDownloadTicket = async () => {
+        if (!ticketRef.current) return;
+        setIsDownloading(true);
+        try {
+            const canvas = await html2canvas(ticketRef.current, {
+                scale: 2,
+                backgroundColor: null,
+                logging: false,
+                useCORS: true
+            });
+            const link = document.createElement('a');
+            link.download = `Ticket-Tribu-${name.replace(/\s+/g,'-')}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        } catch (err) {
+            console.error("Error downloading ticket:", err);
+            alert("No se pudo descargar el ticket. Intenta tomar una captura.");
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     // Check if all displayed brands have been clicked
     const allBrandsClicked = randomBrands.length > 0 && clickedBrands.size >= randomBrands.length;
+    const progressPercentage = randomBrands.length > 0 ? (clickedBrands.size / randomBrands.length) * 100 : 0;
 
     return (
         <div className="modal-overlay">
-            <div className="modal-content" style={{maxWidth: '450px'}}>
-                <button className="close-btn" onClick={onClose}><XIcon /></button>
+            {/* IMPROVED MODAL CONTENT */}
+            <div className={`modal-content-modern ${step === 'ticket' ? 'wide-modal' : ''}`}>
+                <button className="close-btn-modern" onClick={onClose}><XIcon /></button>
                 
                 {step === 'form' && (
                     <div className="text-center">
-                        <div className="modal-header">
-                            <h2>¡Participa Gratis!</h2>
-                            <p>Llena tus datos para generar tu ticket del sorteo.</p>
+                        <div className="modal-decorative-header">
+                            <div className="floating-icon-top"><GiftIcon /></div>
                         </div>
-                        <form onSubmit={handleFormSubmit} className="clean-form">
-                            <div className="form-group">
-                                <label>Tu Nombre</label>
-                                <input type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="Ej. María García" />
-                            </div>
-                            <div className="form-group">
-                                <label>Tu WhatsApp</label>
-                                <div className="input-with-icon">
-                                    <span className="input-icon"><WhatsAppIcon /></span>
-                                    <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} required placeholder="999 123 456" />
+                        <div className="modal-body-p40">
+                            <h3 className="modal-modern-subtitle">¡YA ESTÁS CERCA!</h3>
+                            <h2 className="modal-modern-title">¡Reclama tu Ticket Gratis!</h2>
+                            <p className="modal-modern-desc">Solo faltan tus datos para imprimir tu ticket y entrar al sorteo.</p>
+                            
+                            <form onSubmit={handleFormSubmit} className="clean-form mt-medium">
+                                <div className="form-group-modern">
+                                    <label>Tu Nombre Completo</label>
+                                    <div className="input-modern-wrapper">
+                                        <UserIcon />
+                                        <input type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="Ej. María García" />
+                                    </div>
                                 </div>
-                            </div>
-                            <button className="btn btn-primary btn-block btn-large" disabled={isLoading}>
-                                {isLoading ? 'Procesando...' : 'Continuar'}
-                            </button>
-                        </form>
+                                <div className="form-group-modern">
+                                    <label>Tu WhatsApp (Para avisarte si ganas)</label>
+                                    <div className="input-modern-wrapper">
+                                        <span className="country-prefix"><WhatsAppIcon /> +51</span>
+                                        <div className="prefix-divider"></div>
+                                        <input 
+                                            type="tel" 
+                                            value={phone} 
+                                            onChange={(e) => {
+                                                // STRICT INPUT MASKING: Numbers only, max 9 chars
+                                                const val = e.target.value.replace(/\D/g, '').slice(0, 9);
+                                                setPhone(val);
+                                            }}
+                                            maxLength={9}
+                                            required 
+                                            placeholder="999 123 456" 
+                                        />
+                                    </div>
+                                </div>
+                                <button className="btn btn-primary btn-block btn-glowing mt-medium" disabled={isLoading}>
+                                    {isLoading ? 'Procesando...' : '¡QUIERO MI TICKET!'}
+                                </button>
+                                <p className="privacy-note mt-small"><LockIcon /> Tus datos están 100% seguros. No spam.</p>
+                            </form>
+                        </div>
                     </div>
                 )}
 
                 {step === 'mission' && (
                     <div className="text-center">
-                        <div className="modal-header">
-                            <h2>🎯 Misión Requerida</h2>
-                            <p>Para activar tu ticket, sigue a estas marcas de la tribu.</p>
+                        <div className="modal-header-mission">
+                            <h2 className="text-gradient">🎯 Misión Requerida</h2>
+                            <p className="text-gray-sm">Sigue a estas marcas para desbloquear tu ticket.</p>
+                            
+                            {/* PROGRESS BAR */}
+                            <div className="mission-progress-track">
+                                <div className="mission-progress-fill" style={{width: `${progressPercentage}%`}}></div>
+                            </div>
+                            <div className="mission-progress-label">
+                                {clickedBrands.size} de {randomBrands.length} completadas
+                            </div>
                         </div>
                         
-                        <div className="mission-list">
+                        <div className="mission-list-container">
                             {randomBrands.map((brand) => {
                                 const isClicked = clickedBrands.has(brand.id);
                                 return (
-                                    <div key={brand.id} className="mission-item" style={{opacity: isClicked ? 0.6 : 1, borderColor: isClicked ? '#2ecc71' : '#e2e8f0'}}>
-                                        <img src={brand.logoImage} alt="logo" className="mission-img" />
-                                        <div className="mission-info">
-                                            <strong>{brand.name}</strong>
-                                            <span>{brand.instagram}</span>
+                                    <div key={brand.id} className={`mission-brand-card ${isClicked ? 'completed' : ''}`}>
+                                        <div className="mission-card-left">
+                                            <img src={brand.logoImage} alt="logo" className="mission-brand-logo" />
+                                            <div className="mission-brand-details">
+                                                <div className="mission-brand-name">{brand.name}</div>
+                                                <div className="mission-brand-handle">{brand.instagram}</div>
+                                            </div>
                                         </div>
-                                        <button 
-                                            className="btn-follow-small"
-                                            style={{
-                                                background: isClicked ? '#2ecc71' : '#e1306c',
-                                                color: 'white',
-                                                border: 'none'
-                                            }}
-                                            onClick={() => handleBrandClick(brand.id, brand.instagram)}
-                                        >
-                                            {isClicked ? 'Visto ✓' : 'Seguir'}
-                                        </button>
+                                        <div className="mission-card-right">
+                                            <button 
+                                                className={`btn-mission-follow ${isClicked ? 'done' : ''}`}
+                                                onClick={() => handleBrandClick(brand.id, brand.instagram)}
+                                            >
+                                                {isClicked ? '¡Listo!' : 'Seguir'}
+                                            </button>
+                                        </div>
                                     </div>
                                 );
                             })}
-                            {randomBrands.length === 0 && <p>Cargando marcas...</p>}
+                            {randomBrands.length === 0 && <div className="p-20 text-gray"><LoaderIcon /> Cargando marcas...</div>}
                         </div>
 
-                        <div className="terms-checkbox">
-                            <label>
-                                <input type="checkbox" required />
-                                <span>Confirmo que he seguido a las cuentas.</span>
-                            </label>
-                        </div>
-                        
-                        {/* WARNING NOTICE */}
-                        <div className="warning-box mt-small mb-medium" style={{background: '#fff1f2', padding: '10px', borderRadius: '8px', fontSize: '0.8rem', color: '#be123c', border: '1px solid #fda4af'}}>
-                            ⚠️ Importante: Si sales sorteado, verificaremos manualmente que sigas a estas cuentas. Si no las sigues, se anulará tu premio.
-                        </div>
+                        <div className="mission-footer-action">
+                            {/* WARNING NOTICE */}
+                            <div className="warning-box-clean">
+                                ⚠️ Verificaremos que sigas a las cuentas si ganas.
+                            </div>
 
-                        <button 
-                            onClick={handleGenerateTicket} 
-                            className="btn btn-primary btn-block" 
-                            disabled={isLoading || !allBrandsClicked}
-                            style={{ opacity: allBrandsClicked ? 1 : 0.5, cursor: allBrandsClicked ? 'pointer' : 'not-allowed' }}
-                        >
-                            {isLoading ? 'Generando...' : (!allBrandsClicked ? 'Debes visitar las marcas...' : '¡Listo! Generar Ticket')}
-                        </button>
+                            <button 
+                                onClick={handleGenerateTicket} 
+                                className={`btn-giant-action ${allBrandsClicked ? 'unlocked' : 'locked'}`}
+                                disabled={isLoading || !allBrandsClicked}
+                            >
+                                {isLoading ? <LoaderIcon /> : (allBrandsClicked ? '✨ ¡GENERAR MI TICKET! ✨' : 'Completa las misiones arriba...')}
+                            </button>
+                        </div>
                     </div>
                 )}
 
                 {step === 'ticket' && (
-                    <div className="text-center">
-                        <div className="modal-header">
-                            <h2>🎟️ ¡Ticket Generado!</h2>
-                            <p>Ya estás participando en el sorteo.</p>
-                        </div>
+                    <div className="ticket-view-container">
+                        <ConfettiBackground />
                         
-                        <div className="virtual-ticket">
-                            <div className="ticket-header">LA TRIBU SORTEO</div>
-                            <div className="ticket-body">
-                                <span className="ticket-label">Participante</span>
-                                <span className="ticket-name">{name}</span>
-                                <div className="ticket-divider"></div>
-                                <span className="ticket-label">Código de Sorteo</span>
-                                <span className="ticket-code">{ticketCode}</span>
+                        <h2 className="text-center mb-small text-gradient">🎉 ¡ESTÁS DENTRO! 🎉</h2>
+                        <p className="text-center mb-medium text-gray">Este es tu pase oficial para el sorteo.</p>
+                        
+                        <div className="ticket-wrapper-centered">
+                            {/* TICKET VISUAL - DOWNLOAD TARGET */}
+                            <div className="golden-ticket-visual" ref={ticketRef}>
+                                <div className="ticket-stub-left">
+                                    <div className="ticket-brand-header">LA TRIBU</div>
+                                    <div className="ticket-event-name">GRAN SORTEO</div>
+                                    <div className="ticket-user-info">
+                                        <div className="ticket-label">PARTICIPANTE</div>
+                                        <div className="ticket-value-lg">{name}</div>
+                                    </div>
+                                    <div className="ticket-validity">
+                                        <CheckCircleIcon />
+                                        <span>VERIFICADO</span>
+                                    </div>
+                                </div>
+                                <div className="ticket-rip-line">
+                                    <div className="rip-circle-top"></div>
+                                    <div className="rip-dash"></div>
+                                    <div className="rip-circle-bottom"></div>
+                                </div>
+                                <div className="ticket-stub-right">
+                                    <div className="ticket-number-label">N° BOLETO</div>
+                                    <div className="ticket-code-glitch">{ticketCode}</div>
+                                    <div className="ticket-qr-fake">
+                                        <QrIcon />
+                                    </div>
+                                </div>
                             </div>
-                            <div className="ticket-footer">Guarda una captura de este ticket</div>
                         </div>
 
-                        <button onClick={onClose} className="btn btn-outline btn-block mt-medium">
-                            Volver a la Web
-                        </button>
+                        <div className="ticket-actions mt-medium">
+                            <button 
+                                onClick={handleDownloadTicket} 
+                                className="btn btn-primary btn-block btn-with-icon" 
+                                disabled={isDownloading}
+                            >
+                                {isDownloading ? <LoaderIcon /> : <DownloadIcon />} Guardar mi Ticket
+                            </button>
+                            <button onClick={onGoToDirectory} className="btn btn-ghost-action btn-block mt-small">
+                                Explorar Directorio <ArrowRightIcon />
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -1199,9 +1357,26 @@ function App() {
   // Animation Refs
   const directoryRef = useRef<HTMLDivElement>(null);
   const [isDirVisible, setIsDirVisible] = useState(false);
+  
+  // Flyer Ref
+  const flyerRef = useRef<HTMLDivElement>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
 
   // Admin Backdoor
   const [secretClicks, setSecretClicks] = useState(0);
+
+  // --- MISSING FUNCTIONS DEFINED HERE ---
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const closePromo = () => {
+    setIsPromoOpen(false);
+  };
+  // --------------------------------------
 
   useEffect(() => {
     fetchEntries();
@@ -1331,13 +1506,46 @@ function App() {
       alert('¡Lista copiada! Lista para pegar en WhatsApp.');
   };
 
-  const closePromo = () => {
-      setIsPromoOpen(false);
-  };
+  // --- SHARE AS IMAGE LOGIC ---
+  const handleShareAsImage = async () => {
+      if (!flyerRef.current) return;
+      setIsCapturing(true);
+      
+      try {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          const canvas = await html2canvas(flyerRef.current, {
+              scale: 2, // High res
+              useCORS: true,
+              backgroundColor: null,
+              logging: false
+          });
+          
+          const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+          
+          if (!blob) throw new Error("No se pudo generar la imagen");
 
-  const scrollToSection = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+          const file = new File([blob], "sorteo-tribu-flyer.png", { type: "image/png" });
+
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                  files: [file],
+                  title: '¡Sorteo La Tribu!',
+                  text: '¡Participa GRATIS! 33 Premios.'
+              });
+          } else {
+              const link = document.createElement('a');
+              link.href = URL.createObjectURL(file);
+              link.download = 'flyer-sorteo-tribu.png';
+              link.click();
+              alert("¡Imagen descargada! Súbela a tus redes.");
+          }
+      } catch (err) {
+          console.error("Error generating image:", err);
+          alert("Hubo un problema al generar la imagen. Intenta tomar una captura de pantalla normal.");
+      } finally {
+          setIsCapturing(false);
+      }
   };
 
   const filteredEntries = entries.filter(e => {
@@ -1378,7 +1586,6 @@ function App() {
                 <span>SorteoTribu</span>
             </div>
             <div className="nav-actions">
-                {/* Entrepreneur Button removed for security */}
                 <button onClick={() => scrollToSection('gallery')} className="nav-link">Premios</button>
                 <button onClick={openDirectory} className="nav-link">Directorio</button>
                 <button onClick={openClientModal} className="btn btn-primary">
@@ -1414,10 +1621,8 @@ function App() {
                     <button onClick={openClientModal} className="btn btn-giant">
                         <GiftIcon /> QUIERO MI PREMIO
                     </button>
-                    {/* Secondary button removed for security */}
                 </div>
 
-                {/* NEW: InfoMercado Badge in Hero */}
                 <div className="hero-im-badge mt-medium floating delay-1">
                     <span className="im-logo-small">iM</span>
                     <span>Iniciativa de <strong>InfoMercado Tribu</strong></span>
@@ -1438,12 +1643,12 @@ function App() {
         </div>
       </section>
 
-      {/* Prize Grid Section (Static) */}
+      {/* Prize Grid Section */}
       <section id="gallery" className="prize-marquee-section">
         <div className="container">
-            <div className="section-head">
-                <h2 className="section-title">Premios Confirmados</h2>
-                <p className="section-desc">Todo esto te puedes llevar solo por registrarte.</p>
+            <div className="section-head text-center mb-medium">
+                <h2 className="section-title">🎁 Premios Confirmados</h2>
+                <p className="section-desc">Regalos increíbles de la comunidad para la comunidad.</p>
             </div>
         
             {isLoading ? (
@@ -1454,20 +1659,18 @@ function App() {
             ) : entries.length > 0 ? (
                 <div className="prize-static-grid">
                     {entries.slice(0, showAllGallery ? undefined : 6).map((entry) => (
-                         <div key={entry.id} className="prize-grid-item">
-                            <div className="artwork-card">
-                                <div className="image-wrapper">
-                                    <img src={entry.prizeImage} alt={entry.prize} />
-                                    <span className="category-badge-overlay">{entry.category}</span>
-                                    {entry.isFeatured && <div className="featured-badge"><StarFilledIcon size={12} /> Destacado</div>}
+                         <div key={entry.id} className="artwork-card">
+                            <div className="image-wrapper">
+                                <img src={entry.prizeImage} alt={entry.prize} />
+                                <span className="category-badge-overlay">{entry.category}</span>
+                                {entry.isFeatured && <div className="featured-badge"><StarFilledIcon size={12} /> Destacado</div>}
+                            </div>
+                            <div className="artwork-info">
+                                <div className="artwork-header">
+                                  <h4>{entry.name}</h4>
                                 </div>
-                                <div className="artwork-info">
-                                    <div className="artwork-header">
-                                      <h4>{entry.name}</h4>
-                                      <span className="price-badge">{entry.value}</span>
-                                    </div>
-                                    <p className="artwork-prize">{entry.prize}</p>
-                                </div>
+                                <p className="artwork-prize">{entry.prize}</p>
+                                <span className="price-sticker">{entry.value}</span>
                             </div>
                         </div>
                     ))}
@@ -1496,153 +1699,157 @@ function App() {
                 </div>
             )}
         </div>
-      </section>
+    </section>
 
-      {/* Slim InfoMercado Strip (Kept as well for reinforcement) */}
-      <section className="infomercado-strip">
+      {/* Directory Teaser Section - UPDATED CLOUD LAYOUT (ALL LOGOS) */}
+      <section id="directory" className="aliados-section" ref={directoryRef}>
         <div className="container">
-            <div className="im-strip-content">
-                <div className="im-logo-white">iM</div>
-                <div className="im-text-white">
-                    <span>Iniciativa de la comunidad de <strong>InfoMercado Tribu</strong></span>
-                    <a href="https://infomercado.pe/tribu/" target="_blank" className="im-link-white">
-                        Conocer más <ArrowRightIcon/>
-                    </a>
-                </div>
-            </div>
-        </div>
-      </section>
-
-      {/* Directory Teaser Section (UPDATED to ANIMATED MARQUEE with NEW EFFECTS) */}
-      <section id="directory" className="directory-section-animated" ref={directoryRef}>
-        <div className="container">
-             <div className="directory-teaser-modern">
-                 <div className={`dt-content sticky-col ${isDirVisible ? 'is-visible' : ''} animate-on-scroll`}>
-                    <div className="badge-pulse">
-                        <span className="pulse-dot"></span>
-                        <span>Comunidad Verificada</span>
+             <div className="aliados-container">
+                 {/* Left Text */}
+                 <div className="aliados-text animate-on-scroll">
+                    <div className="badge-pink">
+                        ● COMUNIDAD VERIFICADA
                     </div>
-                    <h2 className="section-title text-gradient">Nuestros Aliados</h2>
-                    <p className="section-desc" style={{marginBottom: '30px', textAlign: 'left'}}>
+                    <h2 className="aliados-title">
+                        <span style={{color: '#8e44ad'}}>NUESTROS</span> <span style={{color: '#f39c12'}}>ALIADOS</span>
+                    </h2>
+                    <p className="aliados-desc">
                         Conoce a los emprendedores que hacen posible este evento. 
                         <strong> Compra local</strong>, apoya a la tribu.
                     </p>
-                    <button onClick={openDirectory} className="btn btn-primary btn-large btn-with-icon">
+                    <button onClick={openDirectory} className="btn-aliados-cta">
                         <BookIcon /> Ver Directorio Completo
                     </button>
                  </div>
                  
-                 <div className="dt-visual-marquee">
-                    <div className="marquee-track">
-                        {/* Row 1 */}
+                 {/* Right Grid (Cloud Layout) */}
+                 <div className="aliados-grid-wrapper animate-on-scroll">
+                     <div className="aliados-grid">
                         {entries.length > 0 ? (
-                            [...entries, ...entries].map((entry, index) => (
-                                <div key={`r1-${entry.id}-${index}`} className="marquee-item" title={entry.name}>
+                             entries.map((entry, index) => (
+                                <div 
+                                    key={entry.id} 
+                                    className="aliado-logo-card floating" 
+                                    style={{
+                                        animationDelay: `${(index % 5) * 0.5}s`, // Improved random feel
+                                        animationDuration: `${4 + (index % 4)}s` // Varied speed
+                                    }}
+                                    title={entry.name}
+                                >
                                     <img src={entry.logoImage || entry.prizeImage} alt={entry.name} />
                                 </div>
-                            ))
+                             ))
                         ) : (
-                            [...Array(10)].map((_, i) => (
-                                <div key={i} className="marquee-item"><img src={`https://via.placeholder.com/100?text=${i+1}`} alt="placeholder" /></div>
+                            [...Array(6)].map((_, i) => (
+                                <div key={i} className="aliado-logo-card floating"><img src={`https://via.placeholder.com/100?text=${i+1}`} alt="placeholder" /></div>
                             ))
                         )}
-                    </div>
-                    {/* Add extra rows for "Wall" feel to allow sticky scroll effect */}
-                    <div className="marquee-track" style={{animationDirection: 'reverse', animationDuration: '45s'}}>
-                         {entries.length > 0 ? (
-                            [...entries, ...entries].map((entry, index) => (
-                                <div key={`r2-${entry.id}-${index}`} className="marquee-item" title={entry.name}>
-                                    <img src={entry.logoImage || entry.prizeImage} alt={entry.name} />
-                                </div>
-                            ))
-                        ) : (
-                            [...Array(10)].map((_, i) => (
-                                <div key={i} className="marquee-item"><img src={`https://via.placeholder.com/100?text=${i+1}`} alt="placeholder" /></div>
-                            ))
-                        )}
-                    </div>
-                    <div className="marquee-track" style={{animationDuration: '50s'}}>
-                         {entries.length > 0 ? (
-                            [...entries, ...entries].map((entry, index) => (
-                                <div key={`r3-${entry.id}-${index}`} className="marquee-item" title={entry.name}>
-                                    <img src={entry.logoImage || entry.prizeImage} alt={entry.name} />
-                                </div>
-                            ))
-                        ) : (
-                            [...Array(10)].map((_, i) => (
-                                <div key={i} className="marquee-item"><img src={`https://via.placeholder.com/100?text=${i+1}`} alt="placeholder" /></div>
-                            ))
-                        )}
-                    </div>
+                     </div>
                  </div>
              </div>
         </div>
       </section>
 
-      <footer className="footer-minimal">
-        <div className="container">
-            <div className="footer-row">
-                <div className="brand">
-                    <span>SorteoTribu</span>
-                </div>
-                <div className="organizer-info">
-                    <span>Iniciativa de la comunidad de</span>
-                    <a href="https://infomercado.pe/tribu/" target="_blank" rel="noopener noreferrer">
-                        InfoMercado Tribu
-                    </a>
-                </div>
+      {/* NEW GRADIENT FOOTER */}
+      <footer className="footer-bar-gradient">
+        <div className="footer-bar-content">
+            <div className="footer-im-logo">iM</div>
+            <div className="footer-text-main" onDoubleClick={handleSecretClick} onClick={handleSecretClick} style={{cursor: 'pointer'}}>
+                Iniciativa de la comunidad de <strong>INFOMERCADO TRIBU</strong>
             </div>
-            <div className="footer-copyright" onDoubleClick={handleSecretClick} onClick={handleSecretClick} style={{userSelect: 'none', cursor: 'pointer'}}>
-                <p>© {new Date().getFullYear()} Juntos somos más fuertes.</p>
-            </div>
+            <a href="https://infomercado.pe/tribu/" target="_blank" rel="noopener noreferrer" className="footer-btn-know-more">
+                Conocer más <ArrowRightIcon />
+            </a>
         </div>
       </footer>
 
-      {/* PROMO POPUP FLYER */}
+      {/* PROMO POPUP FLYER - DOWNLOADABLE & REDESIGNED FOR HIGH CONVERSION */}
       {isPromoOpen && (
           <div className="promo-overlay">
-              <div className="promo-card">
-                  <button className="promo-close" onClick={closePromo}><XIcon /></button>
-                  <div className="promo-header-curve"></div>
-                  <div className="promo-content">
-                      <div className="promo-icon-floating promo-icon-animate">
-                          <StarFilledIcon size={40} color="#ff9f43" />
-                      </div>
-                      <h2>¡Gana Premios Gratis!</h2>
-                      <div className="promo-stats">
-                          <div className="promo-stat-item">
-                              <span className="val">{entries.length > 0 ? entries.length : '10+'}</span>
-                              <span className="lbl">Premios</span>
+              <div className="promo-card-wrapper" style={{maxWidth: '450px', width: '100%', position: 'relative'}}>
+                  
+                  {/* CLOSE BUTTON */}
+                  <button className="promo-close-btn-floating" onClick={closePromo}><XIcon /></button>
+
+                  {/* CAPTURABLE AREA */}
+                  <div 
+                    ref={flyerRef} 
+                    className="promo-card-story"
+                  >
+                      {/* Decorative Circles */}
+                      <div style={{position: 'absolute', top: '-10%', left: '-10%', width: '150px', height: '150px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%'}}></div>
+                      <div style={{position: 'absolute', bottom: '10%', right: '-5%', width: '100px', height: '100px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%'}}></div>
+                      <ConfettiBackground />
+
+                      <div style={{position: 'relative', zIndex: 10, width: '100%'}}>
+                          {/* PILL HEADER */}
+                          <div className="promo-header-pill">
+                              🔥 TIEMPO LIMITADO
                           </div>
-                          <div className="promo-separator"></div>
-                          <div className="promo-stat-item">
-                              <span className="val">Gratis</span>
-                              <span className="lbl">Sorteo</span>
+
+                          {/* MAIN TITLE */}
+                          <div className="text-center">
+                              <h2 className="promo-main-title" style={{color: 'white', opacity: 0.95}}>¡RECLAMA TU</h2>
+                              <span className="promo-highlight-text">REGALO!</span>
+                              <h3 className="promo-sub-title">PARA TU NEGOCIO</h3>
+                          </div>
+
+                          {/* PRIZE BOX - STICKER STYLE */}
+                          <div className="promo-prize-container">
+                              <div className="promo-badge-float">¡GRATIS!</div>
+                              <div className="promo-stat-label">HAY MÁS DE</div>
+                              <div className="promo-stat-big">{entries.length || '33'}</div>
+                              <div className="promo-stat-label" style={{color: '#e1306c', fontWeight: 900, fontSize: '1rem'}}>PREMIOS DISPONIBLES</div>
+                          </div>
+
+                          {/* FOOTER BADGE */}
+                          <div className="promo-footer-badge">
+                              <div className="promo-badge-icon">iM</div>
+                              <span>Avalado por <strong>InfoMercado Tribu</strong></span>
                           </div>
                       </div>
-                      <p className="promo-text">Regístrate ahora y participa por los premios de nuestros emprendedores aliados.</p>
-                      <div className="promo-actions">
-                          <button onClick={() => { closePromo(); openClientModal(); }} className="btn btn-large btn-block btn-sunset">
-                              ¡Quiero mi Ticket!
-                          </button>
-                          <button onClick={() => { closePromo(); scrollToSection('gallery'); }} className="btn btn-link btn-block mt-small">
-                              Ver los Premios
-                          </button>
-                      </div>
+                  </div>
+
+                  {/* ACTION BUTTONS (Outside capture area) */}
+                  <div style={{marginTop: '25px', display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                      <button 
+                        onClick={() => { closePromo(); openClientModal(); }} 
+                        className="btn-promo-action" 
+                      >
+                          ¡QUIERO MI TICKET YA! 🎟️
+                      </button>
+                      
+                      <button 
+                        onClick={handleShareAsImage} 
+                        className="btn btn-outline-white btn-block" 
+                        disabled={isCapturing}
+                        style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                        }}
+                      >
+                          {isCapturing ? <LoaderIcon /> : <CameraIcon />} 
+                          {isCapturing ? 'Generando imagen...' : 'Compartir con Amigos'}
+                      </button>
                   </div>
               </div>
           </div>
       )}
 
       {/* CLIENT REGISTRATION MODAL */}
-      {isClientModalOpen && <ClientRegistrationModal onClose={closeClientModal} />}
+      {isClientModalOpen && (
+          <ClientRegistrationModal 
+            onClose={closeClientModal} 
+            onGoToDirectory={() => {
+                closeClientModal();
+                openDirectory();
+            }}
+          />
+      )}
 
-      {/* FULL SCREEN DIRECTORY OVERLAY - SPLIT LAYOUT (IMPROVED) */}
+      {/* DIRECTORY OVERLAY */}
       {isDirectoryOpen && (
           <div className="directory-full-overlay">
-              <button className="close-directory-absolute" onClick={closeDirectory}>
-                 <XIcon />
-              </button>
+              <button className="close-directory-absolute" onClick={closeDirectory}><XIcon /></button>
               
               <div className="directory-split-container">
                   {/* LEFT SIDEBAR (Sticky) */}
