@@ -229,6 +229,10 @@ const CameraIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
 );
 
+const ListIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+);
+
 // --- INTERACTIVE CONFETTI COMPONENT ---
 const ConfettiBackground = () => {
     return (
@@ -272,6 +276,14 @@ interface Member {
     business_name: string;
 }
 
+interface Client {
+    id: number;
+    created_at: string;
+    name: string;
+    phone: string;
+    ticket_code: string;
+}
+
 const PREDEFINED_CATEGORIES = [
   "Moda",
   "Gastronomía",
@@ -300,6 +312,86 @@ const uploadToStorage = async (file: File) => {
     const { data } = supabase.storage.from('images').getPublicUrl(filePath);
     return data.publicUrl;
 };
+
+// --- PUBLIC LEDGER MODAL COMPONENT (TRANSPARENCY) ---
+function PublicLedgerModal({ onClose }: { onClose: () => void }) {
+    const [clients, setClients] = useState<Client[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchClients = async () => {
+            const { data } = await supabase
+                .from('clients')
+                .select('name, ticket_code, created_at')
+                .order('created_at', { ascending: false });
+            
+            if (data) {
+                // Map to client interface (phone is optional/hidden in this view)
+                const mappedClients = data.map((c: any, index: number) => ({
+                    id: index,
+                    name: c.name,
+                    ticket_code: c.ticket_code,
+                    created_at: c.created_at,
+                    phone: '' // Privacy: Don't show phone publicly
+                }));
+                setClients(mappedClients);
+            }
+            setLoading(false);
+        };
+        fetchClients();
+    }, []);
+
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content-modern" style={{ maxWidth: '600px', height: '80vh', display: 'flex', flexDirection: 'column' }}>
+                <button className="close-btn-modern" onClick={onClose}><XIcon /></button>
+                <div className="modal-header-mission" style={{flexShrink: 0}}>
+                    <h2 className="text-gradient">📜 Lista Oficial de Inscritos</h2>
+                    <p className="text-gray-sm">Transparencia total. Aquí están todos los participantes.</p>
+                </div>
+                
+                <div style={{flex: 1, overflowY: 'auto', padding: '20px'}}>
+                    {loading ? (
+                        <div className="text-center p-40"><LoaderIcon /> Cargando lista...</div>
+                    ) : clients.length > 0 ? (
+                        <table className="data-table" style={{width: '100%'}}>
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Participante</th>
+                                    <th>Ticket</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {clients.map((client, idx) => (
+                                    <tr key={idx}>
+                                        <td style={{fontSize: '0.85rem', color: '#64748b'}}>
+                                            {new Date(client.created_at).toLocaleDateString()}
+                                        </td>
+                                        <td style={{fontWeight: 600}}>
+                                            {client.name.split(' ')[0]} {client.name.split(' ')[1] ? client.name.split(' ')[1].charAt(0) + '.' : ''}
+                                        </td>
+                                        <td>
+                                            <span className="badge-cat" style={{background: '#d1fae5', color: '#065f46'}}>
+                                                {client.ticket_code}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <div className="text-center p-40 text-gray">Aún no hay inscritos. ¡Sé el primero!</div>
+                    )}
+                </div>
+                
+                <div style={{padding: '20px', borderTop: '1px solid #eee', textAlign: 'center', fontSize: '0.8rem', color: '#999'}}>
+                    * Por privacidad, solo mostramos el primer nombre e inicial.
+                </div>
+            </div>
+        </div>
+    );
+}
 
 // --- DIGITAL CARD COMPONENT ---
 function DigitalCardView({ entrepreneurId, onBack }: { entrepreneurId: string, onBack: () => void }) {
@@ -339,28 +431,6 @@ function DigitalCardView({ entrepreneurId, onBack }: { entrepreneurId: string, o
         fetchCard();
     }, [entrepreneurId]);
 
-    const handleShareCard = async () => {
-        if (!data) return;
-        const url = window.location.href;
-        
-        const shareData = {
-            title: `Tarjeta Digital - ${data.name}`,
-            text: `¡Hola! Te comparto mi tarjeta digital de La Tribu Emprendedores.\nNegocio: ${data.name}\nRubro: ${data.category}`,
-            url: url
-        };
-
-        if (navigator.share) {
-            try {
-                await navigator.share(shareData);
-            } catch (err) {
-                console.log('Error sharing:', err);
-            }
-        } else {
-            navigator.clipboard.writeText(url);
-            alert('¡Enlace de tarjeta copiado al portapapeles!');
-        }
-    };
-
     if (loading) return <div className="container p-40 text-center"><LoaderIcon /> Cargando tarjeta...</div>;
     if (!data) return <div className="container p-40 text-center">Empresa no encontrada</div>;
 
@@ -383,10 +453,6 @@ function DigitalCardView({ entrepreneurId, onBack }: { entrepreneurId: string, o
                     <p className="dc-owner">Gerente: {data.ownerName}</p>
                     
                     <div className="dc-links">
-                        <button onClick={handleShareCard} className="dc-btn share-card-btn" style={{background: '#6c5ce7', color: 'white'}}>
-                            <ShareIcon /> Compartir Tarjeta
-                        </button>
-
                         <a href={`https://wa.me/51${data.phone}`} target="_blank" className="dc-btn whatsapp">
                             <WhatsAppIcon /> Contactar por WhatsApp
                         </a>
@@ -427,6 +493,7 @@ function DigitalCardView({ entrepreneurId, onBack }: { entrepreneurId: string, o
 function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     const [entries, setEntries] = useState<Entrepreneur[]>([]);
     const [members, setMembers] = useState<Member[]>([]);
+    const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [password, setPassword] = useState('');
@@ -434,7 +501,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     const [viewEntry, setViewEntry] = useState<Entrepreneur | null>(null);
     const [editingMember, setEditingMember] = useState<Member | null>(null);
     const [editingEnrolled, setEditingEnrolled] = useState<Entrepreneur | null>(null);
-    const [activeTab, setActiveTab] = useState<'enrolled' | 'pending'>('enrolled');
+    const [activeTab, setActiveTab] = useState<'enrolled' | 'pending' | 'clients'>('enrolled');
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -489,6 +556,16 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         if (memData) {
             setMembers(memData);
         }
+
+        const { data: clientData } = await supabase
+            .from('clients')
+            .select('*')
+            .order('created_at', { ascending: false });
+        
+        if (clientData) {
+            setClients(clientData);
+        }
+
         setLoading(false);
     };
 
@@ -513,6 +590,12 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         if (!confirm('¿Seguro que quieres eliminar este pre-registro?')) return;
         const { error } = await supabase.from('members').delete().eq('id', id);
         if (!error) { setMembers(members.filter(m => m.id !== id)); }
+    };
+
+    const handleDeleteClient = async (id: number) => {
+        if (!confirm('¿Seguro que quieres eliminar este cliente?')) return;
+        const { error } = await supabase.from('clients').delete().eq('id', id);
+        if (!error) { setClients(clients.filter(c => c.id !== id)); }
     };
 
     const handleUpdateMember = async (e: React.FormEvent) => {
@@ -621,14 +704,16 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 <div className="stats-grid">
                     <div className="kpi-card"><h3>Total Inscritos</h3><div className="kpi-value">{entries.length}</div></div>
                     <div className="kpi-card"><h3>Valor Acumulado</h3><div className="kpi-value text-success">S/ {totalValue.toFixed(2)}</div></div>
+                    <div className="kpi-card"><h3>Participantes</h3><div className="kpi-value text-blue">{clients.length}</div></div>
                     <div className="kpi-card"><h3>Pendientes</h3><div className="kpi-value" style={{color: '#ff9f43'}}>{pendingMembers.length}</div></div>
                 </div>
                 <div className="admin-tabs">
                     <button className={`tab-btn ${activeTab === 'enrolled' ? 'active' : ''}`} onClick={() => setActiveTab('enrolled')}>Inscritos ({entries.length})</button>
+                    <button className={`tab-btn ${activeTab === 'clients' ? 'active' : ''}`} onClick={() => setActiveTab('clients')}>Clientes ({clients.length})</button>
                     <button className={`tab-btn ${activeTab === 'pending' ? 'active' : ''}`} onClick={() => setActiveTab('pending')}>Pendientes ({pendingMembers.length})</button>
                 </div>
                 <div className="table-container">
-                    {activeTab === 'enrolled' ? (
+                    {activeTab === 'enrolled' && (
                         <table className="data-table">
                             <thead><tr><th>Negocio</th><th>Dueño</th><th>Contacto</th><th>Premio</th><th>Valor (S/)</th><th>Rubro</th><th>Acciones</th></tr></thead>
                             <tbody>{entries.map(entry => (
@@ -649,7 +734,31 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                                 </tr>
                             ))}</tbody>
                         </table>
-                    ) : (
+                    )}
+                    
+                    {activeTab === 'clients' && (
+                        <table className="data-table">
+                            <thead><tr><th>Fecha</th><th>Nombre</th><th>Celular</th><th>Ticket</th><th>Acciones</th></tr></thead>
+                            <tbody>{clients.map(client => (
+                                <tr key={client.id}>
+                                    <td>{new Date(client.created_at).toLocaleDateString()}</td>
+                                    <td><strong>{client.name}</strong></td>
+                                    <td>{client.phone}</td>
+                                    <td><span className="badge-cat" style={{background: '#d1fae5', color: '#065f46'}}>{client.ticket_code}</span></td>
+                                    <td>
+                                        <div className="action-buttons-row">
+                                             <a href={`https://wa.me/51${client.phone}`} target="_blank" className="btn-icon-action" style={{color: '#25D366', borderColor: '#25D366'}} title="Contactar por WhatsApp">
+                                                <WhatsAppIcon />
+                                            </a>
+                                            <button onClick={() => handleDeleteClient(client.id)} className="btn-icon-action text-red"><TrashIcon /></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}</tbody>
+                        </table>
+                    )}
+
+                    {activeTab === 'pending' && (
                         <table className="data-table">
                             <thead><tr><th>Nombre</th><th>Negocio</th><th>Celular</th><th>Estado</th><th>Acción</th></tr></thead>
                             <tbody>{pendingMembers.map(member => (
@@ -658,7 +767,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                                     <td><div className="action-buttons-row">
                                         <button onClick={() => setEditingMember(member)} className="btn-icon-action text-blue"><EditIcon /></button>
                                         <button onClick={() => handleDeleteMember(member.id)} className="btn-icon-action text-red"><TrashIcon /></button>
-                                        <a href={`https://wa.me/51${member.phone}`} target="_blank" className="btn-whatsapp-small"><WhatsAppIcon /></a>
+                                        <a href={`https://wa.me/51${member.phone}`} target="_blank" className="btn-icon-action" style={{color: '#25D366'}}><WhatsAppIcon /></a>
                                     </div></td>
                                 </tr>
                             ))}</tbody>
@@ -1057,7 +1166,7 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
     const [ticketCode, setTicketCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [randomBrands, setRandomBrands] = useState<Entrepreneur[]>([]);
-    const [isDownloading, setIsDownloading] = useState(false);
+    // Removed isDownloading as per request to remove sharing features that caused errors
     const ticketRef = useRef<HTMLDivElement>(null);
     
     // NEW: Track which brands have been clicked
@@ -1138,28 +1247,6 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
             alert('Error al generar ticket. Inténtalo de nuevo.');
         } finally {
             setIsLoading(false);
-        }
-    };
-
-    const handleDownloadTicket = async () => {
-        if (!ticketRef.current) return;
-        setIsDownloading(true);
-        try {
-            const canvas = await html2canvas(ticketRef.current, {
-                scale: 2,
-                backgroundColor: null,
-                logging: false,
-                useCORS: true
-            });
-            const link = document.createElement('a');
-            link.download = `Ticket-Tribu-${name.replace(/\s+/g,'-')}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        } catch (err) {
-            console.error("Error downloading ticket:", err);
-            alert("No se pudo descargar el ticket. Intenta tomar una captura.");
-        } finally {
-            setIsDownloading(false);
         }
     };
 
@@ -1315,13 +1402,7 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
                         </div>
 
                         <div className="ticket-actions mt-medium">
-                            <button 
-                                onClick={handleDownloadTicket} 
-                                className="btn btn-primary btn-block btn-with-icon" 
-                                disabled={isDownloading}
-                            >
-                                {isDownloading ? <LoaderIcon /> : <DownloadIcon />} Guardar mi Ticket
-                            </button>
+                            <p className="text-center text-sm text-gray">Haz una captura de pantalla para guardar tu ticket.</p>
                             <button onClick={onGoToDirectory} className="btn btn-ghost-action btn-block mt-small">
                                 Explorar Directorio <ArrowRightIcon />
                             </button>
@@ -1344,6 +1425,7 @@ function App() {
   
   // Modal State
   const [isClientModalOpen, setIsClientModalOpen] = useState(false); // Client Modal
+  const [isLedgerOpen, setIsLedgerOpen] = useState(false); // Public Ledger Modal
   
   const [isDirectoryOpen, setIsDirectoryOpen] = useState(false);
   const [isPromoOpen, setIsPromoOpen] = useState(false);
@@ -1358,9 +1440,8 @@ function App() {
   const directoryRef = useRef<HTMLDivElement>(null);
   const [isDirVisible, setIsDirVisible] = useState(false);
   
-  // Flyer Ref
+  // Flyer Ref - Removed isCapturing state as sharing feature is removed
   const flyerRef = useRef<HTMLDivElement>(null);
-  const [isCapturing, setIsCapturing] = useState(false);
 
   // Admin Backdoor
   const [secretClicks, setSecretClicks] = useState(0);
@@ -1506,48 +1587,6 @@ function App() {
       alert('¡Lista copiada! Lista para pegar en WhatsApp.');
   };
 
-  // --- SHARE AS IMAGE LOGIC ---
-  const handleShareAsImage = async () => {
-      if (!flyerRef.current) return;
-      setIsCapturing(true);
-      
-      try {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          const canvas = await html2canvas(flyerRef.current, {
-              scale: 2, // High res
-              useCORS: true,
-              backgroundColor: null,
-              logging: false
-          });
-          
-          const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
-          
-          if (!blob) throw new Error("No se pudo generar la imagen");
-
-          const file = new File([blob], "sorteo-tribu-flyer.png", { type: "image/png" });
-
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-              await navigator.share({
-                  files: [file],
-                  title: '¡Sorteo La Tribu!',
-                  text: '¡Participa GRATIS! 33 Premios.'
-              });
-          } else {
-              const link = document.createElement('a');
-              link.href = URL.createObjectURL(file);
-              link.download = 'flyer-sorteo-tribu.png';
-              link.click();
-              alert("¡Imagen descargada! Súbela a tus redes.");
-          }
-      } catch (err) {
-          console.error("Error generating image:", err);
-          alert("Hubo un problema al generar la imagen. Intenta tomar una captura de pantalla normal.");
-      } finally {
-          setIsCapturing(false);
-      }
-  };
-
   const filteredEntries = entries.filter(e => {
     const matchesSearch = e.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           e.instagram.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1586,6 +1625,9 @@ function App() {
                 <span>SorteoTribu</span>
             </div>
             <div className="nav-actions">
+                <button onClick={() => setIsLedgerOpen(true)} className="nav-link" style={{display: 'flex', alignItems: 'center', gap: '5px'}}>
+                    <ListIcon /> Lista Oficial
+                </button>
                 <button onClick={() => scrollToSection('gallery')} className="nav-link">Premios</button>
                 <button onClick={openDirectory} className="nav-link">Directorio</button>
                 <button onClick={openClientModal} className="btn btn-primary">
@@ -1750,16 +1792,22 @@ function App() {
         </div>
       </section>
 
-      {/* NEW GRADIENT FOOTER */}
+      {/* NEW GRADIENT FOOTER WITH TRANSPARENCY LIST BUTTON */}
       <footer className="footer-bar-gradient">
         <div className="footer-bar-content">
             <div className="footer-im-logo">iM</div>
             <div className="footer-text-main" onDoubleClick={handleSecretClick} onClick={handleSecretClick} style={{cursor: 'pointer'}}>
                 Iniciativa de la comunidad de <strong>INFOMERCADO TRIBU</strong>
             </div>
-            <a href="https://infomercado.pe/tribu/" target="_blank" rel="noopener noreferrer" className="footer-btn-know-more">
-                Conocer más <ArrowRightIcon />
-            </a>
+            
+            <div style={{display: 'flex', gap: '12px'}}>
+                <button onClick={() => setIsLedgerOpen(true)} className="footer-btn-know-more" style={{background: 'rgba(0,0,0,0.2)'}}>
+                    <ListIcon /> Lista Oficial
+                </button>
+                <a href="https://infomercado.pe/tribu/" target="_blank" rel="noopener noreferrer" className="footer-btn-know-more">
+                    Conocer más <ArrowRightIcon />
+                </a>
+            </div>
         </div>
       </footer>
 
@@ -1818,22 +1866,13 @@ function App() {
                       >
                           ¡QUIERO MI TICKET YA! 🎟️
                       </button>
-                      
-                      <button 
-                        onClick={handleShareAsImage} 
-                        className="btn btn-outline-white btn-block" 
-                        disabled={isCapturing}
-                        style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-                        }}
-                      >
-                          {isCapturing ? <LoaderIcon /> : <CameraIcon />} 
-                          {isCapturing ? 'Generando imagen...' : 'Compartir con Amigos'}
-                      </button>
                   </div>
               </div>
           </div>
       )}
+
+      {/* PUBLIC LEDGER MODAL */}
+      {isLedgerOpen && <PublicLedgerModal onClose={() => setIsLedgerOpen(false)} />}
 
       {/* CLIENT REGISTRATION MODAL */}
       {isClientModalOpen && (
