@@ -60,7 +60,6 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --- GEMINI AI HELPER (SAFE) ---
 const getAiModel = () => {
-    // Safety check for process.env to prevent white screen crashes
     let apiKey = '';
     try {
         if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
@@ -70,7 +69,6 @@ const getAiModel = () => {
         console.warn("Environment variable access failed", e);
     }
     
-    // If no key, we return a mock or handle it gracefully rather than crashing app load
     if (!apiKey) {
         console.warn("API Key missing. AI features will be disabled.");
         return null;
@@ -103,6 +101,10 @@ const MegaphoneIcon = () => (
 
 const XIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+);
+
+const MenuIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
 );
 
 const ImageIcon = () => (
@@ -186,7 +188,7 @@ const PlusIcon = () => (
 );
 
 const EyeIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
 );
 
 const EditIcon = () => (
@@ -344,8 +346,18 @@ function PublicLedgerModal({ onClose }: { onClose: () => void }) {
     return (
         <div className="modal-overlay">
             <div className="modal-content-modern" style={{ maxWidth: '600px', height: '80vh', display: 'flex', flexDirection: 'column' }}>
-                <button className="close-btn-modern" onClick={onClose}><XIcon /></button>
-                <div className="modal-header-mission" style={{flexShrink: 0}}>
+                <button 
+                    onClick={onClose} 
+                    style={{
+                        position: 'absolute', top: '15px', right: '15px', 
+                        background: '#e2e8f0', color: '#64748b', 
+                        border: 'none', borderRadius: '50%', width: '36px', height: '36px', 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10
+                    }}
+                >
+                    <XIcon />
+                </button>
+                <div className="modal-header-mission" style={{flexShrink: 0, paddingRight: '60px'}}>
                     <h2 className="text-gradient">📜 Lista Oficial de Inscritos</h2>
                     <p className="text-gray-sm">Transparencia total. Aquí están todos los participantes.</p>
                 </div>
@@ -385,8 +397,15 @@ function PublicLedgerModal({ onClose }: { onClose: () => void }) {
                     )}
                 </div>
                 
-                <div style={{padding: '20px', borderTop: '1px solid #eee', textAlign: 'center', fontSize: '0.8rem', color: '#999'}}>
-                    * Por privacidad, solo mostramos el primer nombre e inicial.
+                <div style={{padding: '20px', borderTop: '1px solid #eee', textAlign: 'center', fontSize: '0.8rem', color: '#999', display: 'flex', flexDirection: 'column', gap: '15px'}}>
+                    <p>* Por privacidad, solo mostramos el primer nombre e inicial.</p>
+                    <button 
+                        onClick={onClose} 
+                        className="btn btn-primary"
+                        style={{width: '100%', padding: '12px', fontSize: '1rem'}}
+                    >
+                        Cerrar Lista
+                    </button>
                 </div>
             </div>
         </div>
@@ -1418,6 +1437,7 @@ function App() {
   // Navigation State
   const [viewMode, setViewMode] = useState<'landing' | 'preregister' | 'admin' | 'card'>('landing');
   const [cardId, setCardId] = useState<string>('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // App Data
   const [entries, setEntries] = useState<Entrepreneur[]>([]);
@@ -1452,6 +1472,7 @@ function App() {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+    setMobileMenuOpen(false); // Close menu on click
   };
 
   const closePromo = () => {
@@ -1553,6 +1574,7 @@ function App() {
 
   const openClientModal = () => {
       setIsClientModalOpen(true);
+      setMobileMenuOpen(false);
       document.body.style.overflow = 'hidden';
   }
 
@@ -1563,6 +1585,7 @@ function App() {
 
   const openDirectory = () => {
       setIsDirectoryOpen(true);
+      setMobileMenuOpen(false);
       document.body.style.overflow = 'hidden';
   };
 
@@ -1620,10 +1643,12 @@ function App() {
       {/* Navbar */}
       <nav className={`navbar ${scrolled ? 'navbar-scrolled' : ''}`}>
         <div className="nav-inner">
-            <div className="brand" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
+            <div className="brand" onClick={() => { window.scrollTo({top: 0, behavior: 'smooth'}); setMobileMenuOpen(false); }}>
                 <div className="brand-icon"><GiftIcon /></div>
                 <span>SorteoTribu</span>
             </div>
+            
+            {/* Desktop Actions */}
             <div className="nav-actions">
                 <button onClick={() => setIsLedgerOpen(true)} className="nav-link" style={{display: 'flex', alignItems: 'center', gap: '5px'}}>
                     <ListIcon /> Lista Oficial
@@ -1634,8 +1659,34 @@ function App() {
                   Participar Gratis
                 </button>
             </div>
+
+            {/* Mobile Toggle Button */}
+            <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                {mobileMenuOpen ? <XIcon /> : <MenuIcon />}
+            </button>
         </div>
       </nav>
+
+      {/* MOBILE MENU OVERLAY */}
+      {mobileMenuOpen && (
+          <div className="mobile-menu-overlay open">
+              <div className="mobile-menu-content">
+                  <button onClick={() => { setIsLedgerOpen(true); setMobileMenuOpen(false); }} className="mobile-menu-link">
+                      <ListIcon /> Lista Oficial de Inscritos
+                  </button>
+                  <button onClick={() => scrollToSection('gallery')} className="mobile-menu-link">
+                      <GiftIcon /> Ver Premios
+                  </button>
+                  <button onClick={openDirectory} className="mobile-menu-link">
+                      <BookIcon /> Directorio Completo
+                  </button>
+                  <div style={{height: '20px'}}></div>
+                  <button onClick={openClientModal} className="btn btn-giant" style={{width: '100%', fontSize: '1.2rem', padding: '16px'}}>
+                      ¡Participar Gratis!
+                  </button>
+              </div>
+          </div>
+      )}
 
       {/* Hero */}
       <section className="hero-section">

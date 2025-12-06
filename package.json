@@ -1,5 +1,5 @@
 {
-  "name": "copy-of-copy-of-cerce",
+  "name": "copy-of-copy-of-copy-of-copy-of-copy-of-cerce",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,7 +13,8 @@
     "@google/genai": "^1.31.0",
     "react": "^19.2.1",
     "@supabase/supabase-js": "2.45.4",
-    "html2canvas": "1.4.1"
+    "html2canvas": "1.4.1",
+    "lucide-react": "^0.556.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
