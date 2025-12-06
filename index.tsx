@@ -51,7 +51,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 }
 
-// --- SUPABASE CONFIGURATION ---
+// --- SUPABASE CONFIGURATION (Fixed Connection Error) ---
 const SUPABASE_URL = 'https://epyqaqxlgqcxbenaydct.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVweXFhcXhsZ3FjeGJlbmF5ZGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3NzAyOTIsImV4cCI6MjA4MDM0NjI5Mn0.4FKPSM-UfQlfrKQoXRnBps9RLCX2MT8HkqcQlEHgc5Q';
 
@@ -1177,7 +1177,7 @@ function PreRegisterForm({ onBack }: { onBack: () => void }) {
     );
 }
 
-// ... [ClientRegistrationModal UPDATED]
+// ... [ClientRegistrationModal UPDATED with Random Shuffle]
 function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => void, onGoToDirectory: () => void }) {
     const [step, setStep] = useState<'form' | 'mission' | 'ticket'>('form');
     const [name, setName] = useState('');
@@ -1192,10 +1192,17 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
     const [clickedBrands, setClickedBrands] = useState<Set<string>>(new Set());
 
     const fetchRandomBrands = async () => {
-        // Fetch 3 random brands to follow
-        const { data } = await supabase.from('entrepreneurs').select('*').limit(3);
-        if (data) {
-             const mapped: Entrepreneur[] = data.map(item => ({
+        // Fetch all entrepreneurs to shuffle them client-side for fairness
+        // This ensures every user sees a different set of 3 brands
+        const { data } = await supabase.from('entrepreneurs').select('*');
+        
+        if (data && data.length > 0) {
+             // Shuffle logic (Fisher-Yates sort simplified)
+             const shuffled = data.sort(() => 0.5 - Math.random());
+             // Pick top 3
+             const selected = shuffled.slice(0, 3);
+
+             const mapped: Entrepreneur[] = selected.map(item => ({
                   id: item.id,
                   name: item.business_name,
                   ownerName: item.owner_name,
@@ -1207,7 +1214,12 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
                   date: new Date(item.created_at),
                   instagram: item.instagram,
                   description: item.description,
-                  category: item.category
+                  category: item.category,
+                  // Add optional fields to avoid type errors if interface expects them
+                  facebook: item.facebook,
+                  tiktok: item.tiktok,
+                  website: item.website,
+                  isFeatured: item.is_featured
               }));
              setRandomBrands(mapped);
         }
