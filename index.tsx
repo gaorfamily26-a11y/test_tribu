@@ -4,7 +4,39 @@ import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI } from "@google/genai";
 import html2canvas from 'html2canvas';
 
-// --- ERROR BOUNDARY (Fixes White Screen by showing the error) ---
+// --- CONFIGURACIÓN INTERNACIONAL ---
+const COUNTRY_CODES = [
+    { code: '+51', country: 'PE', label: '🇵🇪 Perú', min: 9, max: 9 },
+    { code: '+1', country: 'US', label: '🇺🇸 USA', min: 10, max: 10 },
+    { code: '+1', country: 'CA', label: '🇨🇦 Canadá', min: 10, max: 10 },
+    { code: '+52', country: 'MX', label: '🇲🇽 México', min: 10, max: 10 },
+    { code: '+57', country: 'CO', label: '🇨🇴 Colombia', min: 10, max: 10 },
+    { code: '+54', country: 'AR', label: '🇦🇷 Argentina', min: 10, max: 11 },
+    { code: '+56', country: 'CL', label: '🇨🇱 Chile', min: 9, max: 9 },
+    { code: '+593', country: 'EC', label: '🇪🇨 Ecuador', min: 9, max: 9 },
+    { code: '+58', country: 'VE', label: '🇻🇪 Venezuela', min: 10, max: 10 },
+    { code: '+591', country: 'BO', label: '🇧🇴 Bolivia', min: 8, max: 8 },
+    { code: '+34', country: 'ES', label: '🇪🇸 España', min: 9, max: 9 },
+    { code: '+33', country: 'FR', label: '🇫🇷 Francia', min: 9, max: 9 },
+    { code: '+49', country: 'DE', label: '🇩🇪 Alemania', min: 10, max: 11 },
+    { code: '+39', country: 'IT', label: '🇮🇹 Italia', min: 9, max: 10 },
+    { code: '+31', country: 'NL', label: '🇳🇱 Holanda', min: 9, max: 9 },
+    { code: '+43', country: 'AT', label: '🇦🇹 Austria', min: 10, max: 13 },
+    { code: '+41', country: 'CH', label: '🇨🇭 Suiza', min: 9, max: 9 },
+    { code: '+61', country: 'AU', label: '🇦🇺 Australia', min: 9, max: 9 },
+];
+
+// Helper to get full WhatsApp link regardless of format (Legacy Peru vs International)
+const getWhatsAppLink = (phone: string) => {
+    const clean = phone.replace(/\D/g, '');
+    // If it's a legacy Peru number (9 digits starting with 9), add 51. Otherwise assume full international code is stored.
+    if (clean.length === 9 && clean.startsWith('9')) {
+        return `https://wa.me/51${clean}`;
+    }
+    return `https://wa.me/${clean}`;
+};
+
+// --- ERROR BOUNDARY ---
 interface ErrorBoundaryProps {
   children?: React.ReactNode;
 }
@@ -188,7 +220,7 @@ const PlusIcon = () => (
 );
 
 const EyeIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
 );
 
 const EditIcon = () => (
@@ -346,18 +378,8 @@ function PublicLedgerModal({ onClose }: { onClose: () => void }) {
     return (
         <div className="modal-overlay">
             <div className="modal-content-modern" style={{ maxWidth: '600px', height: '80vh', display: 'flex', flexDirection: 'column' }}>
-                <button 
-                    onClick={onClose} 
-                    style={{
-                        position: 'absolute', top: '15px', right: '15px', 
-                        background: '#e2e8f0', color: '#64748b', 
-                        border: 'none', borderRadius: '50%', width: '36px', height: '36px', 
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10
-                    }}
-                >
-                    <XIcon />
-                </button>
-                <div className="modal-header-mission" style={{flexShrink: 0, paddingRight: '60px'}}>
+                <button className="close-btn-modern" onClick={onClose}><XIcon /></button>
+                <div className="modal-header-mission" style={{flexShrink: 0}}>
                     <h2 className="text-gradient">📜 Lista Oficial de Inscritos</h2>
                     <p className="text-gray-sm">Transparencia total. Aquí están todos los participantes.</p>
                 </div>
@@ -397,15 +419,8 @@ function PublicLedgerModal({ onClose }: { onClose: () => void }) {
                     )}
                 </div>
                 
-                <div style={{padding: '20px', borderTop: '1px solid #eee', textAlign: 'center', fontSize: '0.8rem', color: '#999', display: 'flex', flexDirection: 'column', gap: '15px'}}>
-                    <p>* Por privacidad, solo mostramos el primer nombre e inicial.</p>
-                    <button 
-                        onClick={onClose} 
-                        className="btn btn-primary"
-                        style={{width: '100%', padding: '12px', fontSize: '1rem'}}
-                    >
-                        Cerrar Lista
-                    </button>
+                <div style={{padding: '20px', borderTop: '1px solid #eee', textAlign: 'center', fontSize: '0.8rem', color: '#999'}}>
+                    * Por privacidad, solo mostramos el primer nombre e inicial.
                 </div>
             </div>
         </div>
@@ -472,7 +487,7 @@ function DigitalCardView({ entrepreneurId, onBack }: { entrepreneurId: string, o
                     <p className="dc-owner">Gerente: {data.ownerName}</p>
                     
                     <div className="dc-links">
-                        <a href={`https://wa.me/51${data.phone}`} target="_blank" className="dc-btn whatsapp">
+                        <a href={getWhatsAppLink(data.phone)} target="_blank" className="dc-btn whatsapp">
                             <WhatsAppIcon /> Contactar por WhatsApp
                         </a>
                         {data.instagram && (
@@ -622,8 +637,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         if (!editingMember) return;
         
         const cleanPhone = editingMember.phone.replace(/\D/g, '');
-        if (!/^9\d{8}$/.test(cleanPhone)) {
-            alert('El número debe ser un celular válido de Perú (9 dígitos, empieza con 9)');
+        // Relaxed validation for admin editing
+        if (cleanPhone.length < 8) {
+            alert('El número parece muy corto. Verifícalo.');
             return;
         }
 
@@ -642,8 +658,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         if (!editingEnrolled) return;
         
         const cleanPhone = editingEnrolled.phone.replace(/\D/g, '');
-        if (!/^9\d{8}$/.test(cleanPhone)) {
-            alert('El número debe ser un celular válido de Perú (9 dígitos, empieza con 9)');
+        if (cleanPhone.length < 8) {
+            alert('El número parece muy corto.');
             return;
         }
 
@@ -739,7 +755,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                                 <tr key={entry.id} className={entry.isFeatured ? 'featured-row' : ''}>
                                     <td><div className="cell-flex"><img src={entry.logoImage} className="table-img" alt=""/><strong>{entry.name}</strong>{entry.isFeatured && <StarFilledIcon size={14} />}</div></td>
                                     <td>{entry.ownerName}</td>
-                                    <td><a href={`https://wa.me/51${entry.phone}`} target="_blank" className="table-link">{entry.phone}</a></td>
+                                    <td><a href={getWhatsAppLink(entry.phone)} target="_blank" className="table-link">{entry.phone}</a></td>
                                     <td>{entry.prize}</td>
                                     <td>{entry.value}</td>
                                     <td><span className="badge-cat">{entry.category}</span></td>
@@ -766,7 +782,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                                     <td><span className="badge-cat" style={{background: '#d1fae5', color: '#065f46'}}>{client.ticket_code}</span></td>
                                     <td>
                                         <div className="action-buttons-row">
-                                             <a href={`https://wa.me/51${client.phone}`} target="_blank" className="btn-icon-action" style={{color: '#25D366', borderColor: '#25D366'}} title="Contactar por WhatsApp">
+                                             <a href={getWhatsAppLink(client.phone)} target="_blank" className="btn-icon-action" style={{color: '#25D366', borderColor: '#25D366'}} title="Contactar por WhatsApp">
                                                 <WhatsAppIcon />
                                             </a>
                                             <button onClick={() => handleDeleteClient(client.id)} className="btn-icon-action text-red"><TrashIcon /></button>
@@ -786,7 +802,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                                     <td><div className="action-buttons-row">
                                         <button onClick={() => setEditingMember(member)} className="btn-icon-action text-blue"><EditIcon /></button>
                                         <button onClick={() => handleDeleteMember(member.id)} className="btn-icon-action text-red"><TrashIcon /></button>
-                                        <a href={`https://wa.me/51${member.phone}`} target="_blank" className="btn-icon-action" style={{color: '#25D366'}}><WhatsAppIcon /></a>
+                                        <a href={getWhatsAppLink(member.phone)} target="_blank" className="btn-icon-action" style={{color: '#25D366'}}><WhatsAppIcon /></a>
                                     </div></td>
                                 </tr>
                             ))}</tbody>
@@ -807,11 +823,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                                     type="tel" 
                                     value={editingMember.phone} 
                                     onChange={(e) => {
-                                        const val = e.target.value.replace(/\D/g, '').slice(0, 9);
+                                        const val = e.target.value.replace(/\D/g, '').slice(0, 15);
                                         setEditingMember({...editingMember, phone: val});
                                     }} 
-                                    maxLength={9}
-                                    placeholder="9..."
+                                    placeholder="Número internacional..."
                                     required 
                                 />
                             </div>
@@ -840,11 +855,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                                     type="tel" 
                                     value={editingEnrolled.phone} 
                                     onChange={(e) => {
-                                        const val = e.target.value.replace(/\D/g, '').slice(0, 9);
+                                        const val = e.target.value.replace(/\D/g, '').slice(0, 15);
                                         setEditingEnrolled({...editingEnrolled, phone: val});
                                     }} 
-                                    maxLength={9}
-                                    placeholder="9..."
+                                    placeholder="Número..."
                                     required 
                                 />
                              </div>
@@ -883,13 +897,13 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
 // ... [PreRegisterForm]
 function PreRegisterForm({ onBack }: { onBack: () => void }) {
-    // Removed 'lock' step - Entry is now public "portal style"
     const [wizardStep, setWizardStep] = useState<'member' | 'business' | 'success'>('member');
     
     // Member Data (Step 1)
     const [memberName, setMemberName] = useState('');
     const [memberBusiness, setMemberBusiness] = useState('');
     const [memberPhone, setMemberPhone] = useState('');
+    const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[0]); // Default Peru
 
     // Business Data (Step 2)
     const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -921,14 +935,18 @@ function PreRegisterForm({ onBack }: { onBack: () => void }) {
         setErrorMsg('');
         
         try {
-            // Validate Phone
-            if (memberPhone.length !== 9 || !memberPhone.startsWith('9')) {
-                throw new Error("El teléfono debe ser un celular válido de Perú (9 dígitos, empieza con 9)");
+            // Validate Phone dynamic length
+            const cleanPhone = memberPhone.replace(/\D/g, '');
+            if (cleanPhone.length < selectedCountry.min || cleanPhone.length > selectedCountry.max) {
+                throw new Error(`El teléfono para ${selectedCountry.label} debe tener entre ${selectedCountry.min} y ${selectedCountry.max} dígitos.`);
             }
             
+            // Format phone including country code for storage
+            const fullPhone = `${selectedCountry.code.replace('+','')}${cleanPhone}`;
+
             // Upsert member
             const { error } = await supabase.from('members').upsert([{ 
-                phone: memberPhone, name: memberName, business_name: memberBusiness 
+                phone: fullPhone, name: memberName, business_name: memberBusiness 
             }], { onConflict: 'phone' });
             
             if (error) throw error;
@@ -958,7 +976,6 @@ function PreRegisterForm({ onBack }: { onBack: () => void }) {
         }
         setIsAiLoading(true);
         try {
-            // Using local init to prevent global crash
             const ai = getAiModel();
             if (!ai) {
                 alert("La IA no está disponible en este momento (Falta API Key).");
@@ -1002,8 +1019,12 @@ function PreRegisterForm({ onBack }: { onBack: () => void }) {
             if (!formattedValue.toUpperCase().includes('S/')) formattedValue = `S/ ${formattedValue.replace('$', '')}`;
             const formattedInsta = instagram.startsWith('@') ? instagram : (instagram ? `@${instagram}` : '');
 
+            // Construct full phone again just to be safe or reuse state if not changed
+            const cleanPhone = memberPhone.replace(/\D/g, '');
+            const fullPhone = `${selectedCountry.code.replace('+','')}${cleanPhone}`;
+
             const { error } = await supabase.from('entrepreneurs').insert([{
-                business_name: memberBusiness, owner_name: memberName, phone: memberPhone,
+                business_name: memberBusiness, owner_name: memberName, phone: fullPhone,
                 prize: prize, prize_value: formattedValue, prize_image_url: prizeUrl,
                 logo_image_url: logoUrl, instagram: formattedInsta, facebook, tiktok, website,
                 description: description || 'Emprendedor de la tribu', category: finalCategory
@@ -1077,19 +1098,31 @@ function PreRegisterForm({ onBack }: { onBack: () => void }) {
                              </div>
 
                              <div className="form-group-large">
-                                 <label>Número de WhatsApp (Contacto)</label>
-                                 <div className="input-with-icon">
-                                     <span className="input-icon"><WhatsAppIcon /></span>
+                                 <label>WhatsApp (Contacto)</label>
+                                 <div className="input-modern-wrapper" style={{padding: '4px 8px'}}>
+                                     <div style={{marginRight: '8px', borderRight: '1px solid #ddd'}}>
+                                         <select 
+                                            value={selectedCountry.code} 
+                                            onChange={(e) => {
+                                                const country = COUNTRY_CODES.find(c => c.code === e.target.value);
+                                                if(country) setSelectedCountry(country);
+                                            }}
+                                            style={{border: 'none', background: 'transparent', fontWeight: 'bold', outline: 'none', maxWidth: '80px', cursor: 'pointer'}}
+                                         >
+                                             {COUNTRY_CODES.map(c => (
+                                                 <option key={c.country} value={c.code}>{c.label} {c.code}</option>
+                                             ))}
+                                         </select>
+                                     </div>
                                      <input 
                                         type="tel" 
                                         value={memberPhone} 
                                         onChange={(e) => {
-                                            const val = e.target.value.replace(/\D/g, '').slice(0, 9);
+                                            const val = e.target.value.replace(/\D/g, '');
                                             setMemberPhone(val);
                                         }}
-                                        maxLength={9}
                                         required 
-                                        placeholder="Ej. 999123456" 
+                                        placeholder={`Ej. ${'9'.repeat(selectedCountry.min)}`} 
                                      />
                                  </div>
                                  <p className="input-hint">Te contactaremos por aquí si ganas.</p>
@@ -1177,7 +1210,7 @@ function PreRegisterForm({ onBack }: { onBack: () => void }) {
     );
 }
 
-// ... [ClientRegistrationModal UPDATED with Random Shuffle]
+// ... [ClientRegistrationModal UPDATED]
 function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => void, onGoToDirectory: () => void }) {
     const [step, setStep] = useState<'form' | 'mission' | 'ticket'>('form');
     const [name, setName] = useState('');
@@ -1185,24 +1218,14 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
     const [ticketCode, setTicketCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [randomBrands, setRandomBrands] = useState<Entrepreneur[]>([]);
-    // Removed isDownloading as per request to remove sharing features that caused errors
+    const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[0]); // Default Peru
     const ticketRef = useRef<HTMLDivElement>(null);
-    
-    // NEW: Track which brands have been clicked
     const [clickedBrands, setClickedBrands] = useState<Set<string>>(new Set());
 
     const fetchRandomBrands = async () => {
-        // Fetch all entrepreneurs to shuffle them client-side for fairness
-        // This ensures every user sees a different set of 3 brands
-        const { data } = await supabase.from('entrepreneurs').select('*');
-        
-        if (data && data.length > 0) {
-             // Shuffle logic (Fisher-Yates sort simplified)
-             const shuffled = data.sort(() => 0.5 - Math.random());
-             // Pick top 3
-             const selected = shuffled.slice(0, 3);
-
-             const mapped: Entrepreneur[] = selected.map(item => ({
+        const { data } = await supabase.from('entrepreneurs').select('*').limit(3);
+        if (data) {
+             const mapped: Entrepreneur[] = data.map(item => ({
                   id: item.id,
                   name: item.business_name,
                   ownerName: item.owner_name,
@@ -1214,12 +1237,7 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
                   date: new Date(item.created_at),
                   instagram: item.instagram,
                   description: item.description,
-                  category: item.category,
-                  // Add optional fields to avoid type errors if interface expects them
-                  facebook: item.facebook,
-                  tiktok: item.tiktok,
-                  website: item.website,
-                  isFeatured: item.is_featured
+                  category: item.category
               }));
              setRandomBrands(mapped);
         }
@@ -1228,14 +1246,14 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        // STRICT PERUVIAN PHONE VALIDATION
-        if (phone.length !== 9 || !phone.startsWith('9')) {
-            alert('Por favor, ingresa un número de celular válido de Perú (9 dígitos, empieza con 9).');
+        // Flexible validation based on country
+        const cleanPhone = phone.replace(/\D/g, '');
+        if (cleanPhone.length < selectedCountry.min || cleanPhone.length > selectedCountry.max) {
+            alert(`Para ${selectedCountry.label}, el número debe tener entre ${selectedCountry.min} y ${selectedCountry.max} dígitos.`);
             return;
         }
 
         setIsLoading(true);
-        // Simulate check
         setTimeout(() => {
             setIsLoading(false);
             fetchRandomBrands();
@@ -1243,12 +1261,10 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
         }, 800);
     };
 
-    // NEW: Handle Brand Click to Track it
     const handleBrandClick = (brandId: string, instagramHandle: string) => {
         const url = `https://instagram.com/${instagramHandle.replace('@','')}`;
         window.open(url, '_blank');
         
-        // Add to set
         setClickedBrands(prev => {
             const newSet = new Set(prev);
             newSet.add(brandId);
@@ -1259,62 +1275,35 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
     const handleGenerateTicket = async () => {
         setIsLoading(true);
         try {
-            // 1. Limpiar y validar teléfono
-            const cleanPhone = phone.replace(/\D/g, '').trim();
-            
-            if (!cleanPhone || cleanPhone.length < 9) {
-                alert('Por favor verifica tu número de celular.');
-                setIsLoading(false);
-                return;
-            }
-
-            // 2. Verificar duplicados en la base de datos
-            const { data: existingRecords, error: checkError } = await supabase
-                .from('clients')
-                .select('ticket_code, name')
-                .eq('phone', cleanPhone);
-
-            if (checkError) {
-                console.error("Error verificando duplicados:", checkError);
-            }
-
-            if (existingRecords && existingRecords.length > 0) {
-                const rec = existingRecords[0];
-                alert(`⚠️ ¡Ya estás participando!\n\nHola ${rec.name}, el número ${cleanPhone} ya tiene el ticket N° ${rec.ticket_code}.\n\nNo es necesario registrarse nuevamente.`);
-                setIsLoading(false);
-                return; // DETENER PROCESO
-            }
-
-            // 3. Generar Ticket si no existe
             const code = `#TRIBU-${Math.floor(1000 + Math.random() * 9000)}`;
             
-            const { error: insertError } = await supabase.from('clients').insert([{
-                name: name.toUpperCase(), // Guardar en mayúsculas para consistencia
-                phone: cleanPhone,
+            const cleanPhone = phone.replace(/\D/g, '');
+            // Create full international format
+            const fullPhone = `${selectedCountry.code.replace('+','')}${cleanPhone}`;
+
+            const { error } = await supabase.from('clients').insert([{
+                name: name,
+                phone: fullPhone,
                 ticket_code: code
             }]);
 
-            if (insertError) throw insertError;
+            if (error) throw error;
 
-            // 4. Éxito
             setTicketCode(code);
             setStep('ticket');
-
-        } catch (err: any) {
-            console.error("Critical error generating ticket:", err);
-            alert('Error al conectar con el servidor. Intenta de nuevo.');
+        } catch (err) {
+            console.error(err);
+            alert('Error al generar ticket. Inténtalo de nuevo.');
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Check if all displayed brands have been clicked
     const allBrandsClicked = randomBrands.length > 0 && clickedBrands.size >= randomBrands.length;
     const progressPercentage = randomBrands.length > 0 ? (clickedBrands.size / randomBrands.length) * 100 : 0;
 
     return (
         <div className="modal-overlay">
-            {/* IMPROVED MODAL CONTENT */}
             <div className={`modal-content-modern ${step === 'ticket' ? 'wide-modal' : ''}`}>
                 <button className="close-btn-modern" onClick={onClose}><XIcon /></button>
                 
@@ -1338,20 +1327,31 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
                                 </div>
                                 <div className="form-group-modern">
                                     <label>Tu WhatsApp (Para avisarte si ganas)</label>
-                                    <div className="input-modern-wrapper">
-                                        <span className="country-prefix"><WhatsAppIcon /> +51</span>
-                                        <div className="prefix-divider"></div>
+                                    <div className="input-modern-wrapper" style={{paddingLeft: '10px'}}>
+                                        <div style={{borderRight: '1px solid #ddd', marginRight: '10px', display: 'flex', alignItems: 'center'}}>
+                                            <select 
+                                                value={selectedCountry.code} 
+                                                onChange={(e) => {
+                                                    const country = COUNTRY_CODES.find(c => c.code === e.target.value);
+                                                    if(country) setSelectedCountry(country);
+                                                }}
+                                                style={{border: 'none', background: 'transparent', fontWeight: 'bold', fontSize: '0.9rem', outline: 'none', maxWidth: '85px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none'}}
+                                            >
+                                                {COUNTRY_CODES.map(c => (
+                                                    <option key={c.country} value={c.code}>{c.label} ({c.code})</option>
+                                                ))}
+                                            </select>
+                                            <span style={{fontSize: '0.8rem', marginLeft: '2px'}}>▼</span>
+                                        </div>
                                         <input 
                                             type="tel" 
                                             value={phone} 
                                             onChange={(e) => {
-                                                // STRICT INPUT MASKING: Numbers only, max 9 chars
-                                                const val = e.target.value.replace(/\D/g, '').slice(0, 9);
+                                                const val = e.target.value.replace(/\D/g, '');
                                                 setPhone(val);
                                             }}
-                                            maxLength={9}
                                             required 
-                                            placeholder="999 123 456" 
+                                            placeholder={`Número (${selectedCountry.min} dígitos)`} 
                                         />
                                     </div>
                                 </div>
@@ -1370,7 +1370,6 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
                             <h2 className="text-gradient">🎯 Misión Requerida</h2>
                             <p className="text-gray-sm">Sigue a estas marcas para desbloquear tu ticket.</p>
                             
-                            {/* PROGRESS BAR */}
                             <div className="mission-progress-track">
                                 <div className="mission-progress-fill" style={{width: `${progressPercentage}%`}}></div>
                             </div>
@@ -1406,7 +1405,6 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
                         </div>
 
                         <div className="mission-footer-action">
-                            {/* WARNING NOTICE */}
                             <div className="warning-box-clean">
                                 ⚠️ Verificaremos que sigas a las cuentas si ganas.
                             </div>
@@ -1430,7 +1428,6 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
                         <p className="text-center mb-medium text-gray">Este es tu pase oficial para el sorteo.</p>
                         
                         <div className="ticket-wrapper-centered">
-                            {/* TICKET VISUAL - DOWNLOAD TARGET */}
                             <div className="golden-ticket-visual" ref={ticketRef}>
                                 <div className="ticket-stub-left">
                                     <div className="ticket-brand-header">LA TRIBU</div>
@@ -2077,7 +2074,7 @@ function App() {
                                     </div>
                                     
                                     <div className="action-buttons-row">
-                                        <button className="btn-block action-btn whatsapp" onClick={() => window.open(`https://wa.me/51${entry.phone}`, '_blank')}>
+                                        <button className="btn-block action-btn whatsapp" onClick={() => window.open(getWhatsAppLink(entry.phone), '_blank')}>
                                             <WhatsAppIcon /> Contactar
                                         </button>
                                         <button 
