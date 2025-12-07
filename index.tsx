@@ -143,20 +143,20 @@ const ImageIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
 );
 
-const InstagramIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+const InstagramIcon = ({ size=20 }: { size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
 );
 
-const FacebookIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+const FacebookIcon = ({ size=20 }: { size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
 );
 
-const TikTokIcon = () => (
-   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
+const TikTokIcon = ({ size=20 }: { size?: number }) => (
+   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
 );
 
-const GlobeIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path></svg>
+const GlobeIcon = ({ size=20 }: { size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path></svg>
 );
 
 const PhoneIcon = () => (
@@ -220,7 +220,7 @@ const PlusIcon = () => (
 );
 
 const EyeIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
 );
 
 const EditIcon = () => (
@@ -265,6 +265,10 @@ const CameraIcon = () => (
 
 const ListIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+);
+
+const HelpIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
 );
 
 // --- INTERACTIVE CONFETTI COMPONENT ---
@@ -1469,9 +1473,413 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
     );
 }
 
+// --- NEW ENTREPRENEUR PORTAL COMPONENT (SUPER AMIGABLE & EDUCATIVO) ---
+function EntrepreneurPortal({ onBack }: { onBack: () => void }) {
+    const [step, setStep] = useState<'login' | 'dashboard'>('login');
+    const [activeTab, setActiveTab] = useState<'business' | 'prize'>('business');
+    const [loginPhone, setLoginPhone] = useState('');
+    const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[0]);
+    const [data, setData] = useState<Entrepreneur | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+    
+    // Edit Form State
+    const [editForm, setEditForm] = useState<Partial<Entrepreneur>>({});
+    const [logoFile, setLogoFile] = useState<File | null>(null);
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
+    const [prizeFile, setPrizeFile] = useState<File | null>(null);
+    const [prizePreview, setPrizePreview] = useState<string | null>(null);
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        
+        try {
+            const cleanPhone = loginPhone.replace(/\D/g, '');
+            const fullPhone = `${selectedCountry.code.replace('+','')}${cleanPhone}`;
+            
+            // Flexible Search
+            let { data: entData, error } = await supabase
+                .from('entrepreneurs')
+                .select('*')
+                .eq('phone', fullPhone)
+                .single();
+
+            if (!entData) {
+                const { data: legacyData } = await supabase
+                    .from('entrepreneurs')
+                    .select('*')
+                    .like('phone', `%${cleanPhone}`)
+                    .limit(1)
+                    .single();
+                entData = legacyData;
+            }
+
+            if (entData) {
+                const mappedData: Entrepreneur = {
+                    id: entData.id,
+                    name: entData.business_name,
+                    ownerName: entData.owner_name,
+                    phone: entData.phone,
+                    prize: entData.prize,
+                    value: entData.prize_value,
+                    prizeImage: entData.prize_image_url || '',
+                    logoImage: entData.logo_image_url || '',
+                    date: new Date(entData.created_at),
+                    instagram: entData.instagram,
+                    facebook: entData.facebook,
+                    tiktok: entData.tiktok,
+                    website: entData.website,
+                    description: entData.description,
+                    category: entData.category,
+                    isFeatured: entData.is_featured
+                };
+
+                setData(mappedData);
+                setEditForm({
+                    name: mappedData.name,
+                    ownerName: mappedData.ownerName,
+                    category: mappedData.category,
+                    description: mappedData.description,
+                    instagram: mappedData.instagram,
+                    facebook: mappedData.facebook,
+                    tiktok: mappedData.tiktok,
+                    website: mappedData.website,
+                    prize: mappedData.prize,
+                    value: mappedData.value
+                });
+                setLogoPreview(mappedData.logoImage);
+                setPrizePreview(mappedData.prizeImage);
+                setStep('dashboard');
+            } else {
+                alert('No encontramos un registro con este número. Asegúrate de haberte inscrito primero.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error al buscar. Intenta nuevamente.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!data) return;
+        setSaving(true);
+        try {
+            let logoUrl = data.logoImage;
+            let prizeUrl = data.prizeImage;
+
+            if (logoFile) logoUrl = await uploadToStorage(logoFile);
+            if (prizeFile) prizeUrl = await uploadToStorage(prizeFile);
+
+            const { error } = await supabase
+                .from('entrepreneurs')
+                .update({
+                    business_name: editForm.name,
+                    owner_name: editForm.ownerName,
+                    category: editForm.category,
+                    description: editForm.description,
+                    instagram: editForm.instagram,
+                    facebook: editForm.facebook,
+                    tiktok: editForm.tiktok,
+                    website: editForm.website,
+                    prize: editForm.prize,
+                    prize_value: editForm.value,
+                    logo_image_url: logoUrl,
+                    prize_image_url: prizeUrl
+                })
+                .eq('id', data.id);
+
+            if (error) throw error;
+            
+            // Update local state to reflect changes immediately
+            setData({ ...data, logoImage: logoUrl, prizeImage: prizeUrl, ...editForm } as Entrepreneur);
+            alert('¡Genial! Tus datos han sido actualizados. 🎉');
+        } catch (err) {
+            console.error(err);
+            alert('Hubo un problema al guardar. Intenta de nuevo.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'prize') => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const url = URL.createObjectURL(file);
+            if (type === 'logo') { setLogoFile(file); setLogoPreview(url); }
+            else { setPrizeFile(file); setPrizePreview(url); }
+        }
+    };
+
+    if (step === 'login') {
+        return (
+            <div className="container" style={{paddingTop: '120px', minHeight: '80vh', display: 'flex', justifyContent: 'center'}}>
+                <div className="card p-40" style={{maxWidth: '450px', width: '100%', textAlign: 'center'}}>
+                    <div style={{color: '#e1306c', marginBottom: '20px'}}><BriefcaseIcon /></div>
+                    <h2 style={{marginBottom: '10px'}}>Portal del Emprendedor</h2>
+                    <p style={{marginBottom: '20px', color: '#64748b'}}>Ingresa tu WhatsApp registrado para editar tu perfil.</p>
+                    
+                    <form onSubmit={handleLogin} className="clean-form">
+                        <div className="form-group-modern">
+                            <label>Tu WhatsApp</label>
+                            <div className="input-modern-wrapper" style={{paddingLeft: '10px'}}>
+                                <div style={{borderRight: '1px solid #ddd', marginRight: '10px', display: 'flex', alignItems: 'center'}}>
+                                    <select 
+                                        value={selectedCountry.code} 
+                                        onChange={(e) => {
+                                            const country = COUNTRY_CODES.find(c => c.code === e.target.value);
+                                            if(country) setSelectedCountry(country);
+                                        }}
+                                        style={{border: 'none', background: 'transparent', fontWeight: 'bold', fontSize: '0.9rem', outline: 'none', maxWidth: '85px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none'}}
+                                    >
+                                        {COUNTRY_CODES.map(c => (
+                                            <option key={c.country} value={c.code}>{c.label} ({c.code})</option>
+                                        ))}
+                                    </select>
+                                    <span style={{fontSize: '0.8rem', marginLeft: '2px'}}>▼</span>
+                                </div>
+                                <input 
+                                    type="tel" 
+                                    value={loginPhone} 
+                                    onChange={(e) => setLoginPhone(e.target.value.replace(/\D/g, ''))}
+                                    required 
+                                    placeholder="Número de celular" 
+                                />
+                            </div>
+                        </div>
+                        <button className="btn btn-primary btn-block mt-medium" disabled={loading}>
+                            {loading ? <LoaderIcon /> : 'Ingresar al Portal'}
+                        </button>
+                    </form>
+                    <button onClick={onBack} className="btn-link mt-medium">Volver</button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div style={{background: '#f8fafc', minHeight: '100vh', paddingTop: '100px', paddingBottom: '80px'}}>
+            <div className="container" style={{maxWidth: '800px'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+                    <button onClick={onBack} className="btn-link-back">← Cerrar Sesión</button>
+                    <div style={{background: '#d1fae5', color: '#065f46', padding: '4px 12px', borderRadius: '20px', fontWeight: 'bold', fontSize: '0.8rem'}}>
+                        Modo Editor
+                    </div>
+                </div>
+
+                <div className="card p-40" style={{borderTop: '5px solid #e1306c'}}>
+                    <h2 style={{textAlign: 'center', marginBottom: '10px'}}>Hola, {editForm.ownerName?.split(' ')[0]} 👋</h2>
+                    <p style={{textAlign: 'center', color: '#64748b', marginBottom: '30px'}}>Vamos a poner tu negocio guapo. Elige qué quieres editar:</p>
+
+                    {/* BIG TABS */}
+                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '30px'}}>
+                        <button 
+                            onClick={() => setActiveTab('business')}
+                            style={{
+                                padding: '20px', 
+                                background: activeTab === 'business' ? '#fff0f5' : 'white', 
+                                border: `2px solid ${activeTab === 'business' ? '#e1306c' : '#e2e8f0'}`,
+                                borderRadius: '12px',
+                                cursor: 'pointer',
+                                transition: '0.2s'
+                            }}
+                        >
+                            <div style={{fontSize: '2rem', marginBottom: '5px'}}>🏢</div>
+                            <div style={{fontWeight: 800, color: '#333'}}>Mi Empresa</div>
+                            <div style={{fontSize: '0.8rem', color: '#666'}}>Logo, Redes, Datos</div>
+                        </button>
+
+                        <button 
+                            onClick={() => setActiveTab('prize')}
+                            style={{
+                                padding: '20px', 
+                                background: activeTab === 'prize' ? '#fff0f5' : 'white', 
+                                border: `2px solid ${activeTab === 'prize' ? '#e1306c' : '#e2e8f0'}`,
+                                borderRadius: '12px',
+                                cursor: 'pointer',
+                                transition: '0.2s'
+                            }}
+                        >
+                            <div style={{fontSize: '2rem', marginBottom: '5px'}}>🎁</div>
+                            <div style={{fontWeight: 800, color: '#333'}}>Mi Premio</div>
+                            <div style={{fontSize: '0.8rem', color: '#666'}}>Foto, Título, Reglas</div>
+                        </button>
+                    </div>
+                    
+                    {/* TAB CONTENT: BUSINESS */}
+                    {activeTab === 'business' && (
+                        <div className="animate-fade-up">
+                            <div className="form-section-label"><span className="section-icon"><BriefcaseIcon /></span><h3>Datos de la Marca</h3></div>
+                            
+                            {/* LOGO UPLOAD */}
+                            <div className="form-group mb-medium" style={{textAlign: 'center'}}>
+                                <label style={{marginBottom: '10px', display: 'block'}}>Tu Logo (Toque para cambiar)</label>
+                                <label className="upload-box-modern" style={{height: '160px', width: '160px', margin: '0 auto', borderRadius: '50%'}}>
+                                    {logoPreview ? <img src={logoPreview} className="upload-preview-img" style={{borderRadius: '50%'}} /> : <span>Sin logo</span>}
+                                    <input type="file" onChange={(e) => handleImageSelect(e, 'logo')} className="hidden" accept="image/*"/>
+                                </label>
+                            </div>
+
+                            <div className="grid-2-col">
+                                <div className="form-group-large">
+                                    <label>Nombre Comercial</label>
+                                    <input type="text" value={editForm.name || ''} onChange={e => setEditForm({...editForm, name: e.target.value})} className="input-large" />
+                                </div>
+                                <div className="form-group-large">
+                                    <label>Rubro</label>
+                                    <select value={PREDEFINED_CATEGORIES.includes(editForm.category || '') ? editForm.category : 'Otro'} onChange={e => setEditForm({...editForm, category: e.target.value})} className="form-select-large">
+                                        {PREDEFINED_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* SOCIALS CARDS DESIGN - HIGHLY VISUAL */}
+                            <div className="separator-line"></div>
+                            <div className="form-section-label"><span className="section-icon"><InstagramIcon /></span><h3>Tus Redes Sociales</h3></div>
+                            <p style={{fontSize: '0.9rem', color: '#64748b', marginBottom: '20px'}}>
+                                Asegúrate de que los enlaces funcionen para que los clientes te encuentren.
+                            </p>
+
+                            {/* INSTAGRAM CARD */}
+                            <div style={{background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '20px', marginBottom: '16px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)'}}>
+                                <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px'}}>
+                                    <div style={{background: '#fce7f3', padding: '8px', borderRadius: '10px', color: '#e1306c'}}>
+                                        <InstagramIcon size={24} />
+                                    </div>
+                                    <label style={{fontSize: '1rem', fontWeight: '800', color: '#333'}}>Instagram</label>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    placeholder="Ej: @mi_tienda_peru" 
+                                    value={editForm.instagram || ''} 
+                                    onChange={(e) => setEditForm({...editForm, instagram: e.target.value})} 
+                                    style={{width: '100%', padding: '12px 16px', borderRadius: '10px', border: '2px solid #fbcfe8', fontSize: '1rem', outline: 'none', transition: '0.2s'}}
+                                    onFocus={(e) => e.target.style.borderColor = '#e1306c'}
+                                    onBlur={(e) => e.target.style.borderColor = '#fbcfe8'}
+                                />
+                                <p style={{fontSize: '0.8rem', color: '#831843', marginTop: '6px', marginLeft: '4px'}}>* Solo coloca tu usuario o el enlace completo.</p>
+                            </div>
+
+                            {/* FACEBOOK CARD */}
+                            <div style={{background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '20px', marginBottom: '16px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)'}}>
+                                <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px'}}>
+                                    <div style={{background: '#e0e7ff', padding: '8px', borderRadius: '10px', color: '#1877f2'}}>
+                                        <FacebookIcon size={24} />
+                                    </div>
+                                    <label style={{fontSize: '1rem', fontWeight: '800', color: '#333'}}>Facebook</label>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    placeholder="Pega el enlace de tu página aquí" 
+                                    value={editForm.facebook || ''} 
+                                    onChange={(e) => setEditForm({...editForm, facebook: e.target.value})} 
+                                    style={{width: '100%', padding: '12px 16px', borderRadius: '10px', border: '2px solid #bfdbfe', fontSize: '1rem', outline: 'none', transition: '0.2s'}}
+                                    onFocus={(e) => e.target.style.borderColor = '#1877f2'}
+                                    onBlur={(e) => e.target.style.borderColor = '#bfdbfe'}
+                                />
+                            </div>
+
+                            {/* TIKTOK CARD */}
+                            <div style={{background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '20px', marginBottom: '16px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)'}}>
+                                <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px'}}>
+                                    <div style={{background: '#f1f5f9', padding: '8px', borderRadius: '10px', color: '#000'}}>
+                                        <TikTokIcon size={24} />
+                                    </div>
+                                    <label style={{fontSize: '1rem', fontWeight: '800', color: '#333'}}>TikTok</label>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    placeholder="Usuario o enlace de TikTok" 
+                                    value={editForm.tiktok || ''} 
+                                    onChange={(e) => setEditForm({...editForm, tiktok: e.target.value})} 
+                                    style={{width: '100%', padding: '12px 16px', borderRadius: '10px', border: '2px solid #cbd5e1', fontSize: '1rem', outline: 'none', transition: '0.2s'}}
+                                    onFocus={(e) => e.target.style.borderColor = '#000'}
+                                    onBlur={(e) => e.target.style.borderColor = '#cbd5e1'}
+                                />
+                            </div>
+
+                            {/* WEBSITE CARD */}
+                            <div style={{background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '20px', marginBottom: '16px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)'}}>
+                                <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px'}}>
+                                    <div style={{background: '#d1fae5', padding: '8px', borderRadius: '10px', color: '#059669'}}>
+                                        <GlobeIcon size={24} />
+                                    </div>
+                                    <label style={{fontSize: '1rem', fontWeight: '800', color: '#333'}}>Sitio Web (Opcional)</label>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    placeholder="www.tu-negocio.com" 
+                                    value={editForm.website || ''} 
+                                    onChange={(e) => setEditForm({...editForm, website: e.target.value})} 
+                                    style={{width: '100%', padding: '12px 16px', borderRadius: '10px', border: '2px solid #a7f3d0', fontSize: '1rem', outline: 'none', transition: '0.2s'}}
+                                    onFocus={(e) => e.target.style.borderColor = '#059669'}
+                                    onBlur={(e) => e.target.style.borderColor = '#a7f3d0'}
+                                />
+                            </div>
+
+                        </div>
+                    )}
+
+                    {/* TAB CONTENT: PRIZE */}
+                    {activeTab === 'prize' && (
+                        <div className="animate-fade-up">
+                            <div className="form-section-label"><span className="section-icon"><GiftIcon /></span><h3>¿Qué vas a regalar?</h3></div>
+                            
+                            {/* PRIZE PHOTO */}
+                            <div className="form-group mb-medium">
+                                <label>Foto del Premio (Muy Importante)</label>
+                                <p className="input-hint">Una buena foto atrae más clientes.</p>
+                                <label className="upload-box-wide" style={{height: '220px'}}>
+                                    {prizePreview ? <img src={prizePreview} style={{height: '100%', objectFit: 'contain'}} /> : <span>Toca para subir foto</span>}
+                                    <input type="file" onChange={(e) => handleImageSelect(e, 'prize')} className="hidden" accept="image/*"/>
+                                </label>
+                            </div>
+
+                            <div className="grid-2-col">
+                                <div className="form-group-large">
+                                    <label>Título del Premio</label>
+                                    <input type="text" placeholder="Ej. Vale de S/ 50.00" value={editForm.prize || ''} onChange={e => setEditForm({...editForm, prize: e.target.value})} className="input-large" />
+                                </div>
+                                <div className="form-group-large">
+                                    <label>Valor Real (S/)</label>
+                                    <input type="text" placeholder="50.00" value={editForm.value || ''} onChange={e => setEditForm({...editForm, value: e.target.value})} className="input-large" />
+                                </div>
+                            </div>
+
+                            <div className="form-group-large">
+                                <label>Descripción y Términos</label>
+                                <div style={{background: '#fffbeb', padding: '10px', borderRadius: '8px', marginBottom: '10px', fontSize: '0.85rem', color: '#92400e'}}>
+                                    📝 Describe tu premio y pon las reglas claras. Ejemplo: "Válido por 30 días. No acumulable. Se recoge en tienda."
+                                </div>
+                                <textarea 
+                                    rows={5} 
+                                    value={editForm.description || ''} 
+                                    onChange={e => setEditForm({...editForm, description: e.target.value})} 
+                                    className="form-textarea-large"
+                                    placeholder="Escribe aquí los detalles..."
+                                    style={{border: '2px solid #e2e8f0', background: 'white'}} 
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SAVE BUTTON (FLOATING OR BOTTOM) */}
+                    <div style={{marginTop: '30px', position: 'sticky', bottom: '20px', zIndex: 10}}>
+                        <button onClick={handleSave} className="btn btn-primary btn-block btn-giant-form" disabled={saving}>
+                            {saving ? <LoaderIcon /> : 'GUARDAR CAMBIOS'}
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function App() {
   // Navigation State
-  const [viewMode, setViewMode] = useState<'landing' | 'preregister' | 'admin' | 'card'>('landing');
+  const [viewMode, setViewMode] = useState<'landing' | 'preregister' | 'admin' | 'card' | 'portal'>('landing');
   const [cardId, setCardId] = useState<string>('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -1499,8 +1907,9 @@ function App() {
   // Flyer Ref - Removed isCapturing state as sharing feature is removed
   const flyerRef = useRef<HTMLDivElement>(null);
 
-  // Admin Backdoor
+  // Secret Clicks Logic
   const [secretClicks, setSecretClicks] = useState(0);
+  const [logoClicks, setLogoClicks] = useState(0); // New state for logo clicks
 
   // --- MISSING FUNCTIONS DEFINED HERE ---
   const scrollToSection = (id: string) => {
@@ -1558,6 +1967,23 @@ function App() {
         if (directoryRef.current) observer.unobserve(directoryRef.current);
     }
   }, [viewMode]);
+
+  // Handle Logo Clicks for Portal Access
+  const handleLogoClick = () => {
+      window.scrollTo({top: 0, behavior: 'smooth'});
+      setMobileMenuOpen(false);
+      
+      setLogoClicks(prev => {
+          const newCount = prev + 1;
+          if (newCount >= 3) {
+              setViewMode('portal');
+              return 0;
+          }
+          // Reset clicks if user stops clicking for 2 seconds
+          setTimeout(() => setLogoClicks(0), 2000);
+          return newCount;
+      });
+  };
 
   const handleSecretClick = () => {
       setSecretClicks(prev => {
@@ -1669,6 +2095,10 @@ function App() {
       return <AdminDashboard onLogout={() => setViewMode('landing')} />;
   }
 
+  if (viewMode === 'portal') {
+      return <EntrepreneurPortal onBack={() => setViewMode('landing')} />;
+  }
+
   if (viewMode === 'card') {
       return <DigitalCardView entrepreneurId={cardId} onBack={() => { setViewMode('landing'); window.history.replaceState(null, '', '/'); }} />;
   }
@@ -1679,7 +2109,7 @@ function App() {
       {/* Navbar */}
       <nav className={`navbar ${scrolled ? 'navbar-scrolled' : ''}`}>
         <div className="nav-inner">
-            <div className="brand" onClick={() => { window.scrollTo({top: 0, behavior: 'smooth'}); setMobileMenuOpen(false); }}>
+            <div className="brand" onClick={handleLogoClick} style={{cursor: 'pointer', userSelect: 'none'}}>
                 <div className="brand-icon"><GiftIcon /></div>
                 <span>SorteoTribu</span>
             </div>
