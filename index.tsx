@@ -139,8 +139,8 @@ const MenuIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
 );
 
-const ImageIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+const ImageIcon = ({ size=32 }: { size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
 );
 
 const InstagramIcon = ({ size=20 }: { size?: number }) => (
@@ -220,11 +220,11 @@ const PlusIcon = () => (
 );
 
 const EyeIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
 );
 
-const EditIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+const EditIcon = ({ size=20 }: { size?: number }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
 );
 
 const ShareIcon = () => (
@@ -1712,13 +1712,53 @@ function EntrepreneurPortal({ onBack }: { onBack: () => void }) {
                         <div className="animate-fade-up">
                             <div className="form-section-label"><span className="section-icon"><BriefcaseIcon /></span><h3>Datos de la Marca</h3></div>
                             
-                            {/* LOGO UPLOAD */}
-                            <div className="form-group mb-medium" style={{textAlign: 'center'}}>
-                                <label style={{marginBottom: '10px', display: 'block'}}>Tu Logo (Toque para cambiar)</label>
-                                <label className="upload-box-modern" style={{height: '160px', width: '160px', margin: '0 auto', borderRadius: '50%'}}>
-                                    {logoPreview ? <img src={logoPreview} className="upload-preview-img" style={{borderRadius: '50%'}} /> : <span>Sin logo</span>}
-                                    <input type="file" onChange={(e) => handleImageSelect(e, 'logo')} className="hidden" accept="image/*"/>
-                                </label>
+                            {/* LOGO UPLOAD REDESIGNED */}
+                            <div className="form-group mb-medium" style={{textAlign: 'center', position: 'relative'}}>
+                                <label style={{marginBottom: '10px', display: 'block', fontWeight: 'bold', color: '#333'}}>Tu Logo</label>
+                                
+                                <div style={{position: 'relative', width: '160px', height: '160px', margin: '0 auto'}}>
+                                    <label className="upload-box-modern" style={{
+                                        width: '100%', height: '100%', 
+                                        borderRadius: '50%', 
+                                        border: '4px solid white',
+                                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                                        overflow: 'hidden',
+                                        background: '#f8fafc',
+                                        position: 'relative',
+                                        cursor: 'pointer'
+                                    }}>
+                                        {logoPreview ? (
+                                            <img src={logoPreview} className="upload-preview-img" style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                                        ) : (
+                                            <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#cbd5e1'}}>
+                                                <ImageIcon size={40} />
+                                                <span style={{fontSize: '0.7rem', marginTop: '4px'}}>Subir</span>
+                                            </div>
+                                        )}
+                                        <input type="file" onChange={(e) => handleImageSelect(e, 'logo')} className="hidden" accept="image/*"/>
+                                        
+                                        {/* Overlay for edit hint */}
+                                        <div style={{
+                                            position: 'absolute', bottom: '0', left: '0', right: '0', 
+                                            background: 'rgba(0,0,0,0.5)', color: 'white', 
+                                            fontSize: '0.7rem', padding: '4px', textAlign: 'center'
+                                        }}>
+                                            CAMBIAR
+                                        </div>
+                                    </label>
+                                    
+                                    {/* Floating Edit Icon */}
+                                    <div style={{
+                                        position: 'absolute', bottom: '10px', right: '10px', 
+                                        background: '#e1306c', color: 'white', 
+                                        width: '32px', height: '32px', borderRadius: '50%', 
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
+                                        pointerEvents: 'none'
+                                    }}>
+                                        <EditIcon size={16} />
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="grid-2-col">
@@ -1732,6 +1772,20 @@ function EntrepreneurPortal({ onBack }: { onBack: () => void }) {
                                         {PREDEFINED_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
                                 </div>
+                            </div>
+
+                            {/* MOVED: Business Description */}
+                            <div className="form-group-large" style={{marginTop: '20px'}}>
+                                <label>Historia / Reseña de tu Empresa</label>
+                                <p className="input-hint" style={{marginBottom: '8px'}}>Cuéntanos de qué trata tu negocio para que los clientes te conozcan mejor.</p>
+                                <textarea 
+                                    rows={4} 
+                                    value={editForm.description || ''} 
+                                    onChange={e => setEditForm({...editForm, description: e.target.value})} 
+                                    className="form-textarea-large"
+                                    placeholder="Somos expertos en..."
+                                    style={{border: '2px solid #e2e8f0', background: 'white', width: '100%'}} 
+                                />
                             </div>
 
                             {/* SOCIALS CARDS DESIGN - HIGHLY VISUAL */}
@@ -1836,30 +1890,25 @@ function EntrepreneurPortal({ onBack }: { onBack: () => void }) {
                                 </label>
                             </div>
 
-                            <div className="grid-2-col">
-                                <div className="form-group-large">
-                                    <label>Título del Premio</label>
-                                    <input type="text" placeholder="Ej. Vale de S/ 50.00" value={editForm.prize || ''} onChange={e => setEditForm({...editForm, prize: e.target.value})} className="input-large" />
+                            {/* PRIZE DESCRIPTION BOX - UPDATED TO BE PROMINENT AND LARGE */}
+                            <div className="form-group-large">
+                                <label>Descripción del Regalo a Sortear</label>
+                                <div style={{background: '#fffbeb', padding: '10px', borderRadius: '8px', marginBottom: '10px', fontSize: '0.85rem', color: '#92400e'}}>
+                                    🎁 Escribe aquí qué vas a regalar. Hazlo sonar increíble.
                                 </div>
-                                <div className="form-group-large">
-                                    <label>Valor Real (S/)</label>
-                                    <input type="text" placeholder="50.00" value={editForm.value || ''} onChange={e => setEditForm({...editForm, value: e.target.value})} className="input-large" />
-                                </div>
+                                <textarea 
+                                    rows={4} 
+                                    value={editForm.prize || ''} 
+                                    onChange={e => setEditForm({...editForm, prize: e.target.value})} 
+                                    className="form-textarea-large"
+                                    placeholder="Ej. Vale de consumo por S/ 50.00..."
+                                    style={{border: '2px solid #e1306c', background: '#fff0f5', fontSize: '1.1rem', fontWeight: '600', width: '100%'}} 
+                                />
                             </div>
 
                             <div className="form-group-large">
-                                <label>Descripción y Términos</label>
-                                <div style={{background: '#fffbeb', padding: '10px', borderRadius: '8px', marginBottom: '10px', fontSize: '0.85rem', color: '#92400e'}}>
-                                    📝 Describe tu premio y pon las reglas claras. Ejemplo: "Válido por 30 días. No acumulable. Se recoge en tienda."
-                                </div>
-                                <textarea 
-                                    rows={5} 
-                                    value={editForm.description || ''} 
-                                    onChange={e => setEditForm({...editForm, description: e.target.value})} 
-                                    className="form-textarea-large"
-                                    placeholder="Escribe aquí los detalles..."
-                                    style={{border: '2px solid #e2e8f0', background: 'white'}} 
-                                />
+                                <label>Valor Referencial (S/)</label>
+                                <input type="text" placeholder="50.00" value={editForm.value || ''} onChange={e => setEditForm({...editForm, value: e.target.value})} className="input-large" />
                             </div>
                         </div>
                     )}
@@ -1869,6 +1918,10 @@ function EntrepreneurPortal({ onBack }: { onBack: () => void }) {
                         <button onClick={handleSave} className="btn btn-primary btn-block btn-giant-form" disabled={saving}>
                             {saving ? <LoaderIcon /> : 'GUARDAR CAMBIOS'}
                         </button>
+                    </div>
+
+                    <div style={{textAlign: 'center', marginTop: '40px', paddingBottom: '20px', color: '#94a3b8', fontSize: '0.85rem', fontWeight: '500'}}>
+                        ✨ Hecho con mucho corazón de <a href="https://gaorsystem.vercel.app/" target="_blank" rel="noopener noreferrer" style={{color: '#e1306c', textDecoration: 'none'}}><strong>Mago26</strong></a> ✨
                     </div>
 
                 </div>
@@ -2310,7 +2363,7 @@ function App() {
       </section>
 
       {/* NEW GRADIENT FOOTER WITH TRANSPARENCY LIST BUTTON */}
-      <footer className="footer-bar-gradient">
+      <footer className="footer-bar-gradient" style={{display: 'flex', flexDirection: 'column'}}>
         <div className="footer-bar-content">
             <div className="footer-im-logo">iM</div>
             <div className="footer-text-main" onDoubleClick={handleSecretClick} onClick={handleSecretClick} style={{cursor: 'pointer'}}>
@@ -2325,6 +2378,9 @@ function App() {
                     Conocer más <ArrowRightIcon />
                 </a>
             </div>
+        </div>
+        <div style={{textAlign: 'center', padding: '10px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)'}}>
+             ✨ Hecho con mucho corazón de <a href="https://gaorsystem.vercel.app/" target="_blank" rel="noopener noreferrer" style={{color: 'white', fontWeight: 'bold'}}>Mago26</a> ✨
         </div>
       </footer>
 
