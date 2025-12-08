@@ -220,7 +220,7 @@ const PlusIcon = () => (
 );
 
 const EyeIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
 );
 
 const EditIcon = ({ size=20 }: { size?: number }) => (
@@ -1227,9 +1227,21 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
     const [clickedBrands, setClickedBrands] = useState<Set<string>>(new Set());
 
     const fetchRandomBrands = async () => {
-        const { data } = await supabase.from('entrepreneurs').select('*').limit(3);
-        if (data) {
-             const mapped: Entrepreneur[] = data.map(item => ({
+        // Fetch up to 50 active entrepreneurs to ensure we have a pool to shuffle
+        const { data } = await supabase.from('entrepreneurs').select('*').limit(50);
+        
+        if (data && data.length > 0) {
+             // Fisher-Yates shuffle algorithm for better randomness than sort()
+             const shuffled = [...data];
+             for (let i = shuffled.length - 1; i > 0; i--) {
+                 const j = Math.floor(Math.random() * (i + 1));
+                 [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+             }
+             
+             // Select top 3
+             const selected = shuffled.slice(0, 3);
+
+             const mapped: Entrepreneur[] = selected.map(item => ({
                   id: item.id,
                   name: item.business_name,
                   ownerName: item.owner_name,
@@ -1240,8 +1252,12 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
                   logoImage: item.logo_image_url || 'https://via.placeholder.com/150',
                   date: new Date(item.created_at),
                   instagram: item.instagram,
+                  facebook: item.facebook,
+                  tiktok: item.tiktok,
+                  website: item.website,
                   description: item.description,
-                  category: item.category
+                  category: item.category,
+                  isFeatured: item.is_featured
               }));
              setRandomBrands(mapped);
         }
