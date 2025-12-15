@@ -203,8 +203,8 @@ const InfoIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
 );
 
-const LockIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+const LockIcon = ({ size = 24 }: { size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
 );
 
 const TrashIcon = () => (
@@ -395,6 +395,7 @@ function PublicLedgerModal({ onClose }: { onClose: () => void }) {
                         <table className="data-table" style={{width: '100%'}}>
                             <thead>
                                 <tr>
+                                    <th style={{width: '40px'}}>#</th>
                                     <th>Fecha</th>
                                     <th>Participante</th>
                                     <th>Ticket</th>
@@ -403,6 +404,7 @@ function PublicLedgerModal({ onClose }: { onClose: () => void }) {
                             <tbody>
                                 {clients.map((client, idx) => (
                                     <tr key={idx}>
+                                        <td style={{fontWeight: 'bold', color: '#94a3b8'}}>{idx + 1}</td>
                                         <td style={{fontSize: '0.85rem', color: '#64748b'}}>
                                             {new Date(client.created_at).toLocaleDateString()}
                                         </td>
@@ -423,8 +425,9 @@ function PublicLedgerModal({ onClose }: { onClose: () => void }) {
                     )}
                 </div>
                 
-                <div style={{padding: '20px', borderTop: '1px solid #eee', textAlign: 'center', fontSize: '0.8rem', color: '#999'}}>
-                    * Por privacidad, solo mostramos el primer nombre e inicial.
+                <div style={{padding: '20px', borderTop: '1px solid #eee', textAlign: 'center', backgroundColor: '#f9fafb'}}>
+                    <button onClick={onClose} className="btn btn-primary btn-block" style={{marginBottom: '10px'}}>Cerrar Lista</button>
+                    <div style={{fontSize: '0.8rem', color: '#999'}}>* Por privacidad, solo mostramos el primer nombre e inicial.</div>
                 </div>
             </div>
         </div>
@@ -707,7 +710,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         return (
             <div className="container" style={{paddingTop: '120px', minHeight: '80vh', display: 'flex', justifyContent: 'center'}}>
                 <div className="card p-40" style={{maxWidth: '400px', width: '100%', textAlign: 'center'}}>
-                    <div style={{color: '#2d3436', marginBottom: '20px'}}><LockIcon /></div>
+                    <div style={{color: '#2d3436', marginBottom: '20px'}}><LockIcon size={48} /></div>
                     <h2 style={{marginBottom: '10px'}}>Admin Dashboard</h2>
                     <form onSubmit={handleLogin}>
                         <input type="password" className="lock-input" placeholder="Contraseña Maestra" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus />
@@ -1226,6 +1229,8 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
     const ticketRef = useRef<HTMLDivElement>(null);
     const [clickedBrands, setClickedBrands] = useState<Set<string>>(new Set());
 
+    const REQUIRED_FOLLOWS = 3;
+
     const fetchRandomBrands = async () => {
         // Fetch up to 50 active entrepreneurs to ensure we have a pool to shuffle
         const { data } = await supabase.from('entrepreneurs').select('*').limit(50);
@@ -1238,8 +1243,8 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
                  [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
              }
              
-             // Select top 3
-             const selected = shuffled.slice(0, 3);
+             // Select top 9 (or all if less than 9) to show more variety
+             const selected = shuffled.slice(0, 9);
 
              const mapped: Entrepreneur[] = selected.map(item => ({
                   id: item.id,
@@ -1319,8 +1324,9 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
         }
     };
 
-    const allBrandsClicked = randomBrands.length > 0 && clickedBrands.size >= randomBrands.length;
-    const progressPercentage = randomBrands.length > 0 ? (clickedBrands.size / randomBrands.length) * 100 : 0;
+    // Calculate progress based on required amount (3), not total shown (9)
+    const isUnlocked = clickedBrands.size >= REQUIRED_FOLLOWS;
+    const progressPercentage = Math.min((clickedBrands.size / REQUIRED_FOLLOWS) * 100, 100);
 
     return (
         <div className="modal-overlay">
@@ -1378,7 +1384,7 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
                                 <button className="btn btn-primary btn-block btn-glowing mt-medium" disabled={isLoading}>
                                     {isLoading ? 'Procesando...' : '¡QUIERO MI TICKET!'}
                                 </button>
-                                <p className="privacy-note mt-small"><LockIcon /> Tus datos están 100% seguros. No spam.</p>
+                                <p className="privacy-note mt-small"><LockIcon size={14} /> Tus datos están 100% seguros. No spam.</p>
                             </form>
                         </div>
                     </div>
@@ -1387,14 +1393,14 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
                 {step === 'mission' && (
                     <div className="text-center">
                         <div className="modal-header-mission">
-                            <h2 className="text-gradient">🎯 Misión Requerida</h2>
-                            <p className="text-gray-sm">Sigue a estas marcas para desbloquear tu ticket.</p>
+                            <h2 className="text-gradient">🎯 Tu Misión</h2>
+                            <p className="text-gray-sm">Elige y sigue al menos a <strong>3 marcas</strong> para desbloquear tu ticket.</p>
                             
                             <div className="mission-progress-track">
                                 <div className="mission-progress-fill" style={{width: `${progressPercentage}%`}}></div>
                             </div>
                             <div className="mission-progress-label">
-                                {clickedBrands.size} de {randomBrands.length} completadas
+                                {isUnlocked ? '¡Misión Cumplida!' : `Llevas ${clickedBrands.size} de ${REQUIRED_FOLLOWS} requeridas`}
                             </div>
                         </div>
                         
@@ -1431,10 +1437,10 @@ function ClientRegistrationModal({ onClose, onGoToDirectory }: { onClose: () => 
 
                             <button 
                                 onClick={handleGenerateTicket} 
-                                className={`btn-giant-action ${allBrandsClicked ? 'unlocked' : 'locked'}`}
-                                disabled={isLoading || !allBrandsClicked}
+                                className={`btn-giant-action ${isUnlocked ? 'unlocked' : 'locked'}`}
+                                disabled={isLoading || !isUnlocked}
                             >
-                                {isLoading ? <LoaderIcon /> : (allBrandsClicked ? '✨ ¡GENERAR MI TICKET! ✨' : 'Completa las misiones arriba...')}
+                                {isLoading ? <LoaderIcon /> : (isUnlocked ? '✨ ¡GENERAR MI TICKET! ✨' : `Sigue a ${Math.max(0, REQUIRED_FOLLOWS - clickedBrands.size)} más para desbloquear`)}
                             </button>
                         </div>
                     </div>
@@ -2259,12 +2265,12 @@ function App() {
             
             <div className="hero-visual">
                <div className="stat-card floating">
-                  <span className="stat-value">{entries.length}</span>
-                  <span className="stat-label">Premios Disponibles</span>
+                  <span className="stat-value">310</span>
+                  <span className="stat-label">Participantes</span>
                </div>
                <div className="stat-card floating delay-1">
-                  <span className="stat-value">S/ {entries.reduce((acc, curr) => acc + (parseFloat(curr.value.replace(/[^0-9.]/g, '')) || 0), 0).toFixed(0)}</span>
-                  <span className="stat-label">En Premios</span>
+                  <span className="stat-value">S/ 16,870.95</span>
+                  <span className="stat-label">Valor Acumulado</span>
                </div>
             </div>
           </div>
@@ -2395,8 +2401,9 @@ function App() {
                 </a>
             </div>
         </div>
-        <div style={{textAlign: 'center', padding: '10px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)'}}>
-             ✨ Hecho con mucho corazón de <a href="https://gaorsystem.vercel.app/" target="_blank" rel="noopener noreferrer" style={{color: 'white', fontWeight: 'bold'}}>Mago26</a> ✨
+        <div style={{textAlign: 'center', padding: '10px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px'}}>
+             <span>✨ Hecho con mucho corazón de <a href="https://gaorsystem.vercel.app/" target="_blank" rel="noopener noreferrer" style={{color: 'white', fontWeight: 'bold'}}>Mago26</a> ✨</span>
+             <button onClick={() => setViewMode('admin')} style={{opacity: 0.5, color: 'white', cursor: 'pointer', padding: '5px', background: 'none', border: 'none'}} title="Admin Access"><LockIcon size={16} /></button>
         </div>
       </footer>
 
